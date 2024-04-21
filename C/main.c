@@ -14,35 +14,53 @@
 
 static bool options = SHOW_PROMPT;
 
-static int process_args(int argc, char **argv, board_t *board)
+static void print_help(const char *prog)
 {
-  int opt, ret = 0, initialized = false;
-  while ((opt = getopt(argc, argv, "qp:")) != -1) {
+  printf("%s [-dhqp] <args>\n"
+	 "An experimental game\n"
+	 "Options:\n"
+	 " -d \t Load default position\n"
+	 " -h \t Show help\n"
+	 " -q \t Do not show prompt\n"
+	 " -p <position> \t Load position\n"
+	 , prog);
+
+}
+
+static board_t *process_args(int argc, char **argv)
+{
+  board_t *board;
+  int opt, initialized = false;
+  while ((opt = getopt(argc, argv, "hqp:")) != -1) {
     switch (opt) {
     case 'q':
       options = options ^ SHOW_PROMPT;
       break;
     case 'p':
-      ret = string_to_board(board, (unsigned char *) argv[1]);
-      if (ret == 0) initialized = true;
+      board = string_to_board((unsigned char *) argv[1]);
+      if (board) initialized = true;
       break;
+    case 'h':
+      print_help(argv[0]);
+      exit(EXIT_SUCCESS);
     default: /* '?' */
       fprintf(stderr, "Usage: %s [-p position]\n", argv[0]);
       exit(EXIT_FAILURE);
     }
   }
   if (initialized == false) {
-    ret = init_board(board, 9, 9);
+      board = string_to_board((unsigned char *) DEFAULT_POSITION);
   }
-  return ret;
+  return board;
 }
 
 int main(int argc, char **argv)
 {
-  board_t board;
+  board_t *board;
 
-  if (process_args(argc, argv, &board)) return 1;
-  if (repl(&board, options)) return 1;
-  free_board(&board);
-  return 0;
+  board = process_args(argc, argv);
+  if (board == NULL) return 1;
+  int ret = repl(&board, options);
+  free_board(board);
+  return ret;
 }

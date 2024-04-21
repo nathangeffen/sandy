@@ -14,7 +14,7 @@
 
 #include "board.h"
 
-int string_to_board(board_t *board, unsigned char *spec);
+board_t *string_to_board(unsigned char *spec);
 void output_board(const board_t *board, FILE *f);
 
 #endif

@@ -3,10 +3,10 @@
 
 #include "board.h"
 #include "position.h"
+#include "minimax.h"
 
 #define SHOW_PROMPT 1
 
-void print_help();
-int repl(board_t *board, int options);
+int repl(board_t **board, int options);
 
 #endif

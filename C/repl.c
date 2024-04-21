@@ -6,8 +6,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-
 #include "repl.h"
+
+move_t zero_move = {0, 0, 0, 0};
 
 bool is_blank(const char *str)
 {
@@ -27,10 +28,10 @@ static void clean(const char *str_from, char *str_to)
   } while(*i++ != 0);
 }
 
-void print_help()
+static void print_help()
 {
-  puts(" ,                                   Show board");
-  puts(" ;                                   Show all possible moves");
+  puts(" B                                   Show board");
+  puts(" M                                   Show all possible moves");
   puts(" p [swne] [rbx] <file>-<rank>        Place a piece");
   puts(" b [swne]+  <file>-<rank>            Block a square");
   puts(" u [swne]+  <file>-<rank>            Unblock a square");
@@ -40,44 +41,65 @@ void print_help()
   puts(" n |[move_num]                       Set player turn");
   puts(" g [012]                             Set game type");
   puts(" l <position>                        Load a position");
+  puts(" D                                   Load default position");
+  puts(" R                                   Ready to play");
   puts(" o                                   Output position");
+  puts(" O                                   Output game record");
   puts(" m <file>-<rank>;<file>-<rank>       Move piece");
+  puts(" ! <index>                           Move by index");
+  puts(" S <depth>;[0(don't move) 1(move)]>  Suggest move");
+  puts(" e                                   evaluate position");
+  puts(" x                                   Can't move so pass");
+  puts(" j                                   Back one move");
+  puts(" k                                   Forward one move");
   puts(" d                                   Dump history to stdout");
   puts(" h                                   Help");
   puts(" q                                   Quit");
 }
 
 static const unsigned char *spec = (const unsigned char *)
-  "(?<print>^,$)|"
-  "(?<moves>^;$)|"
+  "(?<print>^B$)|"
+  "(?<moves>^M$)|"
   "(?<setpiece>^p(?<side_p>[nswe])(?<piece_p>[rbx])(?<file_p>[0-9]+)-(?<rank_p>[0-9])+$)|"
   "(?<block>^b(?<side_b>([nswe]{1,4})|x)(?<file_b>[0-9]+)-(?<rank_b>[0-9])+$)|"
   "(?<score>s(?<side_s>[nswe]{1,4})(?<score_s>[0-9]+);(?<file_s>[0-9]+)-(?<rank_s>[0-9])+$)|"
   "(?<init>^i(?<file_i>[0-9]+)x(?<rank_i>[0-9])+$)|"
   "(?<turn>^t(?<side_t>[nswe]))|"
-  "(?<move>^n(?<num_m>[0-9]+))|"
+  "(?<move_num>^n(?<num_m>[0-9]+))|"
   "(?<game>^g(?<type>[012]))|"
   "(?<load>l(?<board_regex>" BOARD_REGEX "))|"
+  "(?<default>D$)|"
+  "(?<ready>^R$)|"
+  "(?<move>^m(?<file_from>[0-9]+),(?<rank_from>[0-9]+)-(?<file_to>[0-9]+),(?<rank_to>[0-9]+)$)|"
+  "(?<move_index>^!(?<index_m>[0-9]+)$)|"
+  "(?<suggest>^S(?<depth>[0-6]);(?<move_S>[01])$)|"
+  "(?<eval>^e$)|"
+  "(?<pass>^x$)|"
   "(?<dump>^d$)|"
-  "(?<ouput>^o$)|"
+  "(?<back>^j$)|"
+  "(?<forward>^k$)|"
+  "(?<ouput_position>^o$)|"
+  "(?<ouput_record>^O$)|"
   "(?<help>^h$)|"
   "(?<quit>^q$)";
 
-static int exec_cmd(board_t *board, const char *cmd, bool *cont,
+static int exec_cmd(board_t **board, const char *cmd, bool *cont,
 		    pcre2_code *re, PCRE2_SIZE* ovector)
 {
-  char side[5], piece;
+  char side[6], piece;
   int file, rank, score;
   char *subcmd = malloc(strlen(cmd) + 1);
+  move_t move;
+
   if (subcmd == 0) {
     fprintf(stderr, "No memory at %s %d\n", __FILE__, __LINE__);
     return -1;
   }
   switch( (char) cmd[0]) {
-  case ',':
-    print_board(board); break;
-  case ';':
-    print_moves(board, " "); break;
+  case 'B':
+    print_board(*board); break;
+  case 'M':
+    print_moves(*board, " "); break;
   case 'p':
     substr_regex(re, ovector, "side_p", subcmd, cmd);
     side[0] = subcmd[0];
@@ -87,7 +109,7 @@ static int exec_cmd(board_t *board, const char *cmd, bool *cont,
     file = atoi(subcmd);
     substr_regex(re, ovector, "rank_p", subcmd, cmd);
     rank = atoi(subcmd);
-    set_piece(board, side[0], piece, file, rank);
+    set_piece(*board, side[0], piece, file, rank);
     break;
   case 'b':
     substr_regex(re, ovector, "side_b", subcmd, cmd);
@@ -96,7 +118,7 @@ static int exec_cmd(board_t *board, const char *cmd, bool *cont,
     file = atoi(subcmd);
     substr_regex(re, ovector, "rank_b", subcmd, cmd);
     rank = atoi(subcmd);
-    set_block(board, side, file, rank);
+    set_block(*board, side, file, rank);
     break;
   case 's':
     substr_regex(re, ovector, "side_s", subcmd, cmd);
@@ -107,37 +129,130 @@ static int exec_cmd(board_t *board, const char *cmd, bool *cont,
     file = atoi(subcmd);
     substr_regex(re, ovector, "rank_s", subcmd, cmd);
     rank = atoi(subcmd);
-    set_score(board, side, score, file, rank);
+    set_score(*board, side, score, file, rank);
     break;
   case 'i':
     substr_regex(re, ovector, "file_i", subcmd, cmd);
     file = atoi(subcmd);
     substr_regex(re, ovector, "rank_i", subcmd, cmd);
     rank = atoi(subcmd);
-    free_board(board);
-    int ret = init_board(board, rank, file);
-    if (ret) {
+    free_board(*board);
+    *board = init_board(file, rank);
+    if (*board == NULL) {
       free(subcmd);
-      return ret;
+      return -1;
     }
+    break;
+  case 'e':
+    printf("Evaluation: %f\n", eval(*board, (*board)->side));
     break;
   case 't':
     substr_regex(re, ovector, "side_t", subcmd, cmd);
-    set_side(board, subcmd[0]);
+    set_side_char(*board, subcmd[0]);
     break;
   case 'n':
     substr_regex(re, ovector, "num_m", subcmd, cmd);
-    set_num_moves(board, atoi(subcmd));
+    set_ply(*board, atoi(subcmd));
     break;
   case 'g':
     substr_regex(re, ovector, "type", subcmd, cmd);
-    set_type(board, subcmd[0]);
+    set_type(*board, subcmd[0]);
     break;
   case 'o':
-    output_board(board, stdout); break;
+    output_board(*board, stdout); break;
+  case 'O':
+    print_game_record(*board, "\n", " ", true, ". "); break;
   case 'l':
     substr_regex(re, ovector, "board_regex", subcmd, cmd);
-    printf("DBG LOADING: %s\n", subcmd); break;
+    free_board(*board);
+    *board = string_to_board((unsigned char *) subcmd);
+    if (*board == NULL) {
+      free(subcmd);
+      return -1;
+    }
+    break;
+  case 'm':
+    {
+      substr_regex(re, ovector, "file_from", subcmd, cmd);
+      move.file_from = atoi(subcmd);
+      substr_regex(re, ovector, "rank_from", subcmd, cmd);
+      move.rank_from = atoi(subcmd);
+      substr_regex(re, ovector, "file_to", subcmd, cmd);
+      move.file_to = atoi(subcmd);
+      substr_regex(re, ovector, "rank_to", subcmd, cmd);
+      move.rank_to = atoi(subcmd);
+      board_t *t = make_move(*board, move);
+      if (t == NULL) {
+	free(subcmd);
+	return -1;
+      }
+      *board = t;
+    }
+    break;
+  case '!':
+    substr_regex(re, ovector, "index_m", subcmd, cmd);
+    int index = atoi(subcmd);
+    if (index >= (*board)->num_moves) {
+      puts("Move out of range");
+    } else {
+      board_t *t = make_move(*board, (*board)->moves[index]);
+      if (t == NULL) {
+	free(subcmd);
+	return -1;
+      }
+      *board = t;
+    }
+    break;
+  case 'x':
+    *board = pass(*board);
+    break;
+  case 'S':
+    {
+      bool err = false;
+      int depth;
+      bool play;
+      substr_regex(re, ovector, "depth", subcmd, cmd);
+      depth = atoi(subcmd);
+      substr_regex(re, ovector, "move_S", subcmd, cmd);
+      play = atoi(subcmd);
+      eval_move_t m = minimax(*board, depth, &err);
+      if (err) {
+	printf("An error ocurred.\n");
+	return -1;
+      }
+      printf("Suggested move: ");
+      print_move(m.move);
+      printf(" Eval: %f\n", m.eval);
+      if (play) {
+	board_t *t = make_move(*board, m.move);
+	if (t == NULL) {
+	  free(subcmd);
+	  return -1;
+	}
+	*board = t;
+      }
+      break;
+    }
+  case 'j':
+    if ((*board)->prev)
+      *board = (*board)->prev;
+    break;
+  case 'k':
+    if ((*board)->next)
+      *board = (*board)->next;
+    break;
+  case 'D':
+    free_board(*board);
+    *board = string_to_board((unsigned char *) DEFAULT_POSITION);
+    if (*board == NULL) {
+      free(subcmd);
+      return -1;
+    }
+    break;
+  case 'R':
+    set_board_situation(*board);
+    puts("Ready to play");
+    break;
   case 'd':
     {
     HIST_ENTRY **the_list;
@@ -158,7 +273,7 @@ static int exec_cmd(board_t *board, const char *cmd, bool *cont,
   return 0;
 }
 
-int repl(board_t *board, int options)
+int repl(board_t **board, int options)
 {
   /* for pcre2_compile */
   pcre2_code *re;

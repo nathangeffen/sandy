@@ -4,59 +4,6 @@
 
 static const unsigned char *spec = (const unsigned char *) BOARD_REGEX;
 
-static int set_pieces(board_t *board, const char *pieces) {
-  int len = (int) strlen(pieces);
-  int squares = board->ranks * board->files;
-
-  if (len > squares)  {
-    fprintf(stderr, "Too many squares (%d) given for board (%d).\n", len,
-	    squares);
-    return -1;
-  }
-
-  if (len < squares) {
-    fprintf(stderr, "Warning: Squares %d. %d provided.\n", squares, len);
-  }
-
-  const char *s = pieces;
-  for (int i = 0; *s; s++, i++) {
-    switch (*s) {
-    case '_':
-    case '-':
-      board->squares[i] = EMPTY;
-      break;
-    case 'R':
-      board->squares[i] = SOUTH_ROOK;
-      break;
-    case 'B':
-      board->squares[i] = SOUTH_BISHOP;
-      break;
-    case 'S':
-      board->squares[i] = WEST_ROOK;
-      break;
-    case 'C':
-      board->squares[i] = WEST_BISHOP;
-      break;
-    case 'r':
-      board->squares[i] = NORTH_ROOK;
-      break;
-    case 'b':
-      board->squares[i] = NORTH_BISHOP;
-      break;
-    case 's':
-      board->squares[i] = EAST_ROOK;
-      break;
-    case 'c':
-      board->squares[i] = EAST_BISHOP;
-      break;
-    default:
-      fprintf(stderr, "Unknown piece %c\n", *s);
-      return -1;
-    }
-  }
-  return 0;
-}
-
 static int set_blocked(board_t *board, const char *blocked) {
   int len = (int) strlen(blocked);
   int squares = board->ranks * board->files;
@@ -106,7 +53,7 @@ static int set_blocked(board_t *board, const char *blocked) {
       fprintf(stderr, "Unknown block value %c\n", *s);
       return -1;
     }
-    board->squares[i] = j;
+    board->blocks[i] = j;
   }
   return 0;
 }
@@ -149,8 +96,8 @@ static void set_game_type(board_t *board, char game_type) {
   board->game_type = game_type - '0';
 }
 
-int string_to_board(board_t *board, unsigned char *pos) {
-  int ret = 0;
+board_t *string_to_board(unsigned char *pos) {
+  board_t *board = NULL;
 
   const size_t spec_size = strlen( (char *) spec);
   /* for pcre2_compile */
@@ -173,7 +120,7 @@ int string_to_board(board_t *board, unsigned char *pos) {
 
   if (subpos == NULL) {
     fprintf(stderr, "Not enough memory: %s %d\n", __FILE__, __LINE__);
-    return -1;
+    return NULL;
   }
 
   re = pcre2_compile(spec, spec_size, options, &errcode, &erroffset,
@@ -182,7 +129,7 @@ int string_to_board(board_t *board, unsigned char *pos) {
     pcre2_get_error_message(errcode, buffer, 120);
     fprintf(stderr,"%d\t%s: %s %d\n", errcode, buffer, __FILE__, __LINE__);
     free(subpos);
-    return -1;
+    return NULL;
   }
 
   match_data = pcre2_match_data_create(ovecsize, NULL);
@@ -195,23 +142,29 @@ int string_to_board(board_t *board, unsigned char *pos) {
     int files = atoi(subpos);
     substr_regex(re, ovector, "ranks", subpos, (char *) pos);
     int ranks = atoi(subpos);
-    ret = init_board(board, ranks, files);
-    if (ret != 0) goto error_free;
+    board = init_board(files, ranks);
+    if (board == NULL) goto error_free;
 
     // pieces
     substr_regex(re, ovector, "pieces", subpos, (char *) pos);
-    ret = set_pieces(board, subpos);
-    if (ret != 0) goto error_free;
+    if(set_pieces(board, subpos)) {
+      free_board(board);
+      goto error_free;
+    }
 
     // blocked
     substr_regex(re, ovector, "blocked", subpos, (char *) pos);
-    ret = set_blocked(board, subpos);
-    if (ret != 0) goto error_free;
+    if(set_blocked(board, subpos))  {
+      free_board(board);
+      goto error_free;
+    }
 
     // scores
     substr_regex(re, ovector, "scores", subpos, (char *) pos);
-    ret = set_scores(board, subpos);
-    if (ret != 0) goto error_free;
+    if(set_scores(board, subpos)) {
+      free_board(board);
+      goto error_free;
+    }
 
     // gametype
     substr_regex(re, ovector, "gametype", subpos, (char *) pos);
@@ -219,25 +172,28 @@ int string_to_board(board_t *board, unsigned char *pos) {
 
     // number of moves
     substr_regex(re, ovector, "gametype", subpos, (char *) pos);
-    set_num_moves(board, atoi(subpos));
+    set_ply(board, atoi(subpos));
+    set_side(board);
 
   } else if (rc == 0) {
     fprintf(stderr,"offset vector too small: %d",rc);
     free(subpos);
-    return -1;
+    free_board(board);
+    return NULL;
 
   } else if(rc < 0) {
     fprintf(stderr, "Invalid position: %s %d\n", __FILE__, __LINE__);
-    free(subpos);
-    return -1;
+    free_board(board);
+    return NULL;
   }
-
+  set_board_situation(board);
+  set_all_scores(board);
  error_free:
   free(subpos);
   pcre2_match_data_free(match_data);
   pcre2_code_free(re);
 
-  return ret;
+  return board;
 }
 
 static void print_pieces(const board_t *board, FILE *f) {
@@ -273,7 +229,7 @@ static void print_pieces(const board_t *board, FILE *f) {
 
 static void print_blocked(const board_t *board, FILE *f) {
   for (int i = 0; i < board->ranks * board->files; i++)
-      fprintf(f, "%X", board->squares[i] & BLOCK_ANY);
+      fprintf(f, "%X", board->blocks[i]);
   fprintf(f, "/");
 }
 
@@ -288,8 +244,8 @@ static void print_game_type(const board_t *board, FILE *f) {
   fprintf(f, "%c/", '0' + board->game_type);
 }
 
-static void print_num_moves(const board_t *board, FILE *f) {
-  fprintf(f, "%d", board->num_moves);
+static void print_ply(const board_t *board, FILE *f) {
+  fprintf(f, "%d", board->ply);
 }
 
 
@@ -304,5 +260,6 @@ void output_board(const board_t *board, FILE *f) {
   print_blocked(board, f);
   print_scores(board, f);
   print_game_type(board, f);
-  print_num_moves(board, f);
+  print_ply(board, f);
+  fprintf(f, "\n");
 }

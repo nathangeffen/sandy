@@ -7,47 +7,46 @@
 #include <stdbool.h>
 #include <pcre2.h>
 
-#define EMPTY 0
+#define EMPTY        0
+#define NONE         0
+#define SOUTH        1
+#define WEST         2
+#define NORTH        4
+#define EAST         8
 
-#define NONE  0
-#define SOUTH 1
-#define WEST  2
-#define NORTH 4
-#define EAST  8
-#define DRAW  16
+#define ANY_SIDE     (SOUTH | WEST | NORTH | EAST)
+
+#define ROOK         16
+#define BISHOP       32
+#define BLOCK        64
+
+#define SOUTH_BLOCK  (BLOCK | SOUTH)
+#define WEST_BLOCK   (BLOCK | WEST)
+#define NORTH_BLOCK  (BLOCK | NORTH)
+#define EAST_BLOCK   (BLOCK | EAST)
+
+#define ANY_BLOCK    (SOUTH_BLOCK | WEST_BLOCK | NORTH_BLOCK | EAST_BLOCK)
 
 
-#define BLOCK_S      1
-#define BLOCK_W      2
-#define BLOCK_N      4
-#define BLOCK_E      8
+#define SOUTH_BISHOP (SOUTH | BISHOP)
+#define SOUTH_ROOK   (SOUTH | ROOK)
 
-#define BLOCK_ANY    (BLOCK_S | BLOCK_W | BLOCK_N |BLOCK_E)
+#define WEST_BISHOP  (WEST | BISHOP)
+#define WEST_ROOK    (WEST | ROOK)
 
-#define SOUTH_BLOCK  BLOCK_S
-#define WEST_BLOCK   BLOCK_W
-#define NORTH_BLOCK  BLOCK_N
-#define EAST_BLOCK   BLOCK_E
+#define NORTH_BISHOP (NORTH | BISHOP)
+#define NORTH_ROOK   (NORTH | ROOK)
 
-#define SOUTH_BISHOP 16
-#define SOUTH_ROOK   32
-
-#define WEST_BISHOP  64
-#define WEST_ROOK    128
-
-#define NORTH_BISHOP 256
-#define NORTH_ROOK   512
-
-#define EAST_BISHOP  1024
-#define EAST_ROOK    2048
+#define EAST_BISHOP  (EAST | BISHOP)
+#define EAST_ROOK    (EAST | ROOK)
 
 #define SOUTH_PIECE  (SOUTH_BISHOP | SOUTH_ROOK)
 #define WEST_PIECE   (WEST_BISHOP | WEST_ROOK)
 #define NORTH_PIECE  (NORTH_BISHOP | NORTH_ROOK)
 #define EAST_PIECE   (EAST_BISHOP | EAST_ROOK)
 
-#define ROOK         (SOUTH_ROOK | WEST_ROOK | NORTH_ROOK | EAST_ROOK)
-#define BISHOP       (SOUTH_BISHOP | WEST_BISHOP | NORTH_BISHOP | EAST_BISHOP)
+#define ANY_ROOK     (SOUTH_ROOK | WEST_ROOK | NORTH_ROOK | EAST_ROOK)
+#define ANY_BISHOP   (SOUTH_BISHOP | WEST_BISHOP | NORTH_BISHOP | EAST_BISHOP)
 
 #define ANY_PIECE    (SOUTH_PIECE | WEST_PIECE | NORTH_PIECE | EAST_PIECE)
 
@@ -64,28 +63,38 @@
 #define MAX_RANKS 10000
 #define MAX_FILES 10000
 
-#define WHITE 1
-#define BLACK -1
-
 #define RF(rank, file) ( (rank) *  board->files + (file) )
+#define RANK_FILE RF
 #define FR(file, rank) RF(rank, file)
+#define FILE_RANK FR
+#define SI(side)       __builtin_ctz(side)
+#define SCORE_INDEX SI
+
 
 #define BOARD_REGEX							\
   "(?<files>[0-9]+)x(?<ranks>[0-9]+)/(?<pieces>[RBSCrbsc_-]*)/"		\
   "(?<blocked>[0-9a-fA-F]*)/(?<scores>[0-9a-fA-F]*)/(?<gametype>[012])/" \
-  "(?<num_moves>[0-9]+)"
+  "(?<ply>[0-9]+)"
 
 #define DEFAULT_POSITION						\
-  "9x9/"								\
-  "-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_"				\
-  "-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-/"			\
-  "0000000000F00000F00000000000000000000000F00000000000000000000000F"	\
-  "00000F0000000000/000000300010002000300020001000300000000000000000"	\
-  "00000000000000000000000000000000000000000000000000000000000000000"	\
-  "00000000000003000000000000000000000000000000000000000000000000000"	\
+  "9x9/RRBRRRBRR"							\
+  "_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_"	\
+  "rrbrrrbrr/0000000000F00000F00000000000000000000000F"			\
+  "00000000000000000000000F00000F0000000000/00000030001000200030002"	\
+  "000100030000000000000000000000000000000000"				\
+  "0000000000000000000000000000000000000000000"				\
   "00000000000000000030000000000000000000000000000000000000000000000"	\
-  "00000000000000000000000000000000000000000000000003000100020003000"	\
-  "2000100030000000/0/0"
+  "0000000000000000000000030000000000000000000000000000000000000000"	\
+  "0000000000000000000000000000000000000000000000000000000300010002"	\
+  "00030002000100030000000/0/0"
+
+#define TEST_POSITION_2_2 "2x2/R_-r/0000/0000000000000000/0/0"
+
+#define TEST_POSITION_3_3a \
+  "3x3/-R-_-_-r-/000000000/000000000000000030300000000000000000/0/0"
+
+#define TEST_POSITION_3_3b						\
+  "3x3/RR-_-_rr-/000000000/000000000000000030303030000000000000/0/0"
 
 // Game types. There are three types:
 // South vs North (0)
@@ -96,6 +105,7 @@
 #define SW_VS_NE 1
 #define S_VS_W_VS_N_VS_E 2
 
+
 struct move {
   int file_from;
   int rank_from;
@@ -105,45 +115,76 @@ struct move {
 
 typedef struct move move_t;
 
+struct eval_move {
+  double eval;
+  move_t move;
+};
+
+typedef struct eval_move eval_move_t;
+
+struct board;
+typedef struct board board_t;
+
 struct board {
   int ranks;
   int files;
   int *scores[4];
-  int *squares;
-  int repetitions; // 3 repetitions = draw
+  int current_scores[4];
+  int possible_scores[4];
+  int *blocks;
   // Array of possibles moves
   move_t moves[MAX_MOVES];
   int num_moves;
+  move_t move;
+  int ply;
   int game_type;
+  bool game_ending;
+  bool game_ended;
   int winner;
   // Keep track of past positions because repetion not allowed
-  struct board *prev;
-  struct board *next;
+  board_t *prev;
+  board_t *next;
+  int side;
+  int squares[];
 };
 
-typedef struct board board_t;
+extern move_t zero_move;
 
 //prototypes
 
 void substr_regex(pcre2_code *re, const PCRE2_SIZE* ovector,
 		  const char *name, char *dest, const char *src);
-int init_board(board_t *board, int ranks, int files);
+board_t *init_board(int files, int ranks);
+board_t *free_board_prev(board_t *board, const board_t *until);
+board_t *free_board_next(board_t *board, const board_t *until);
 void free_board(board_t *board);
 void print_board(const board_t *board);
+void print_move(move_t move);
 void print_moves(board_t *board, const char *delim);
+void print_game_record(const board_t *board, const char* move_delim,
+		       const char *ply_delim,
+		       bool numbered, const char *number_delim);
 int get_rank(const board_t *board, int square);
 int get_file(const board_t *board, int square);
 void get_rook_moves(board_t *board, int square);
 void get_bishop_moves(board_t *board, int square);
-void get_piece_moves(board_t *board, int file, int rank);
-void get_moves(board_t *board);
+int get_piece_moves(board_t *board, int file, int rank);
+int get_moves(board_t *board);
+int set_pieces(board_t *board, const char *pieces);
 void set_piece(board_t *board, char side, char piece, int file, int rank);
 void set_block(board_t *board, const char *side, int file, int rank);
 void set_score(board_t *board, const char *side,
 	       int score, int file, int rank);
-void set_side(board_t *board, char side);
-void set_num_moves(board_t *board, int n);
+void set_side(board_t *board);
+void set_side_char(board_t *board, char side);
+void set_ply(board_t *board, int n);
 void set_type(board_t *board, char type);
-char to_play_char(const board_t *board);
-int to_play_int(const board_t *board);
+char side_char(const board_t *board);
+int side_int(const board_t *board);
+board_t* make_move(board_t *board, move_t move);
+board_t *pass(board_t *board);
+int possible_score(const board_t *board, int side);
+int count_score(const board_t *board, int side);
+void set_all_scores(board_t *board);
+int set_board_situation(board_t *board);
 #endif
