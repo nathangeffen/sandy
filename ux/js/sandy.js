@@ -1,21 +1,66 @@
 "use strict";
 
-let parseBoard = function(board_spec) {
+function parseBoard(board_spec) {
 
-        return {};
+        return {
+                ranks: 9,
+                files: 9,
+                pieces: {
+                        S: {
+
+                        },
+                        N: {
+
+                        },
+                },
+                blocks: {
+                        S: {
+
+                        },
+                        N: {
+
+                        },
+                },
+                scores: {
+                        S: {
+
+                        },
+                        N: {
+
+                        },
+                },
+        };
 }
 
-let drawBoard = function(canvas_id, board_spec) {
-        let canvas = getDocumentElementById(canvas_id);
+function drawSquares(ctx, files, ranks) {
+
+}
+
+function drawPieces(ctx, pieces) {
+
+}
+
+function drawBlocks(ctx, blocks) {
+
+}
+
+function drawScores(ctx, scores) {
+
+}
+
+function drawBoard(canvas, board_spec) {
+        let board = parseBoard(board_spec);
         var ctx = canvas.getContext("2d");
-        board = parseBoard(board_spec);
-        draw
+        drawSquares(ctx, board.files, board.ranks);
+        drawPieces(ctx, board.pieces);
+        drawBlocks(ctx, board.blocks);
+        drawScores(ctx, board.scores);
 }
 
-let sendMove = function(board_spec, move) {
+function sendMove(board_spec, move) {
 
 }
 
-let receiveMove = function(canvas) {
+function receiveMove(canvas) {
 
 }
