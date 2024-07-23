@@ -5,16 +5,39 @@
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <meta http-equiv="X-UA-Compatible" content="ie=edge">
-                <title>My Website</title>
+                <title>Sandy - a fun game</title>
                 <link rel="stylesheet" href="./style.css">
                 <link rel="icon" href="./favicon.ico" type="image/x-icon">
         </head>
         <body>
                 <main>
                         <h1>Sandy: an experimental board game</h1>
-
-                        <canvas id="game-1" width="300" height="300"></canvas>
+                        <div id="sandy-game-1" class="sandy-container">
+                        </div>
                 </main>
-                <script src="sandy.js"></script>
         </body>
+        <style>
+        .sandy-container {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        height: 100vh;
+        width: 100vw;
+        }
+        .sandy-container-left {
+        background-color: green;
+        width: 50%;
+        }
+        .sandy-container-right {
+        background-color: brown;
+        width: 50%;
+        }
+        div.sandy-north-side {
+                height: 50%;
+        }
+        div.sandy-south-side p  {
+                vertical-align: bottom;
+        }
+        </style>
+        <script src="../js/sandy.js"></script>
 </html>
