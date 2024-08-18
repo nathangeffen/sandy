@@ -23,6 +23,11 @@ const SQUARE_DARK_SCORED = '#444';
 const SQUARE_SOUTH_SCORE = 'Red';
 const SQUARE_NORTH_SCORE = 'Green';
 
+const NOT_ENDED = 0;
+const DRAW = SOUTH | NORTH;
+const SOUTH_WINS = SOUTH;
+const NORTH_WINS = NORTH;
+
 function defaultBoard() {
         const scores = new Map();
         scores.set(SOUTH, [
@@ -47,12 +52,12 @@ function defaultBoard() {
                 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ]);
+        const winningScores = new Map();
+        winningScores.set(SOUTH, 10);
+        winningScores.set(NORTH, 10);
         const currentScores = new Map();
         currentScores.set(SOUTH, 0);
         currentScores.set(NORTH, 0);
-        const maxScores = new Map();
-        maxScores.set(SOUTH, 0);
-        maxScores.set(NORTH, 0);
         const possibleScores = new Map();
         possibleScores.set(SOUTH, 0);
         possibleScores.set(NORTH, 0);
@@ -83,15 +88,16 @@ function defaultBoard() {
                         0, 0, 0, 0, 0, 0, 0, 0, 0,
                 ],
                 scores: scores,
+                winningScores: winningScores,
                 currentScores: currentScores,
-                maxScores: maxScores,
                 possibleScores: possibleScores,
                 side: SOUTH,
                 ply: 0,
                 ended: false,
                 ending: false,
                 moves: [],
-                history: {},
+                history: [],
+                gameEnded: NOT_ENDED,
                 gui: {
                         selected: [-1],
                         originalColor: undefined,
@@ -108,6 +114,19 @@ function fr(board, file, rank) {
         return board.files * rank + file;
 }
 
+function invFr(board, square) {
+        const file = square % board.files;
+        const rank = Math.floor(square / board.files);
+        return [file, rank];
+}
+
+function toUserNotation(file, rank) {
+        return [String.fromCharCode(file + 97), rank + 1];
+}
+
+function fromUserNotation(file, rank) {
+        return [file.charCodeAt(0) - 97, rank.toNumber() - 2];
+}
 
 function showDestination(board, i) {
         let elem = document.getElementById(board.gui.id + 'square-' + i);
@@ -156,43 +175,62 @@ function deselectPiece(board) {
 
 function drawSides(board) {
         let div = board.gui.elems.divSouthSide;
-        let html = "<p>" +
-                "S: " + board.currentScores.get(SOUTH) + "/" +
-                board.maxScores.get(SOUTH);
+        let content =
+                "South | Scored: " + board.currentScores.get(SOUTH) +
+                ". Left: " + (board.possibleScores.get(SOUTH) - board.currentScores.get(SOUTH)) +
+                ". Win: " + board.winningScores.get(SOUTH) + ". ";
         if (board.side == SOUTH) {
-                html += "* "
+                content += "* "
         }
-        html += "</p>"
-        div.innerHTML = html;
-
+        div.textContent = content;
         div = board.gui.elems.divNorthSide;
-        div.textContent +=
-                "N: " + board.currentScores.get(NORTH) + "/" +
-                board.maxScores.get(NORTH);
+        content =
+                "North | Scored: " + board.currentScores.get(NORTH) +
+                ". Left: " + (board.possibleScores.get(NORTH) - board.currentScores.get(NORTH)) +
+                ". Win: " + board.winningScores.get(NORTH) + ". ";
         if (board.side == NORTH) {
-                div.textContent += "* "
+                content += "* "
+        }
+        div.textContent = content;
+}
+
+function drawGameEnded(board) {
+        if (board.gameEnded == SOUTH_WINS) {
+                board.gui.elems.divGameInfo.textContent = "South wins.";
+        } else if (board.gameEnded == NORTH_WINS) {
+                board.gui.elems.divGameInfo.textContent = "North wins.";
+        } else if (board.gameEnded == DRAW) {
+                board.gui.elems.divGameInfo.textContent = "Game tied.";
         }
 }
 
+function reverseMovePieceBoard(board) {
+        if (board.history.length > 0) {
+                // Execute first part of movePieceBoard in reverse
+                if (board.side == SOUTH) {
+                        board.side = NORTH;
+                } else {
+                        board.side = SOUTH;
+                }
+                board.ply -= 1;
+                const [from, to] = board.history.pop();
+                board.blocks[to] = 0;
+                board.squares[from] = board.squares[to];
+                board.squares[to] = 0;
+                // This must be executed in the same order as movePieceBoard
+                getMoves(board);
+                calcScores(board);
+                board.gameEnded = checkGameEnded(board);
+        }
+}
 
-function movePiece(board, from, to) {
+function movePieceBoard(board, from, to) {
         board.squares[to] = board.squares[from];
         board.squares[from] = 0;
-        const squareFrom = document.getElementById(board.gui.id + 'square-' + from);
-        const squareTo = document.getElementById(board.gui.id + 'square-' + to);
-        if (board.gui.squareFrom) {
-                clearPreviousMoveSquare(board.gui.squareFrom);
-        }
-        if (board.gui.squareTo && board.gui.scoredOnPreviousMove === false) {
-                clearPreviousMoveSquare(board.gui.squareFrom);
-        }
-        drawMove(board, squareFrom, squareTo);
         if (board.scores.get(board.side)[to] > 0) {
-                drawScoredSquare(squareTo);
-                board.gui.scoredOnPreviousMove = true;
-        } else {
-                board.gui.scoredOnPreviousMove = false;
+                board.blocks[to] = SOUTH_NORTH_BLOCK;
         }
+        board.history.push([from, to]);
         board.ply += 1;
         if (board.side == SOUTH) {
                 board.side = NORTH;
@@ -201,14 +239,97 @@ function movePiece(board, from, to) {
         }
         getMoves(board);
         calcScores(board);
+        board.gameEnded = checkGameEnded(board);
+}
+
+function drawRecord(board, from, to) {
+        let [from_file, from_rank] = invFr(board, from);
+        let [to_file, to_rank] = invFr(board, to);
+        [from_file, from_rank] = toUserNotation(from_file, from_rank);
+        [to_file, to_rank] = toUserNotation(to_file, to_rank);
+        const move = document.createElement('span');
+        move.setAttribute('data-ply', board.ply);
+        move.setAttribute('data-move-from', from);
+        move.setAttribute('data-move-to', to);
+        if (board.ply % 2 == 0) {
+                move.setAttribute('class', 'sandy-move-south');
+                move.textContent = (board.ply / 2 + 1) + ".";
+        } else {
+                move.setAttribute('class', 'sandy-move-north');
+        }
+        move.textContent += from_file + from_rank + '-' + to_file + to_rank;
+        board.gui.elems.divRecord.appendChild(move);
+}
+
+function movePieceGuiBefore(board, from, to) {
+        const squareFrom = document.getElementById(board.gui.id + 'square-' + from);
+        const squareTo = document.getElementById(board.gui.id + 'square-' + to);
+        if (board.gui.squareFrom) {
+                clearPreviousMoveSquare(board.gui.squareFrom);
+        }
+        if (board.gui.squareTo && board.gui.scoredOnPreviousMove === false) {
+                clearPreviousMoveSquare(board.gui.squareTo);
+        }
+        drawMove(board, squareFrom, squareTo);
+        if (board.scores.get(board.side)[to] > 0) {
+                drawScoredSquare(squareTo);
+                board.gui.scoredOnPreviousMove = true;
+        } else {
+                board.gui.scoredOnPreviousMove = false;
+        }
+        drawRecord(board, from, to);
+}
+
+function movePieceGuiAfter(board) {
+        if (board.gameEnded) {
+                drawGameEnded(board);
+        }
+        setPossibleScores(board);
         drawSides(board);
+}
+
+function movePiece(board, from, to) {
+        movePieceGuiBefore(board, from, to);
+        movePieceBoard(board, from, to);
+        movePieceGuiAfter(board);
+        // board.squares[to] = board.squares[from];
+        // board.squares[from] = 0;
+        // const squareFrom = document.getElementById(board.gui.id + 'square-' + from);
+        // const squareTo = document.getElementById(board.gui.id + 'square-' + to);
+        // if (board.gui.squareFrom) {
+        //         clearPreviousMoveSquare(board.gui.squareFrom);
+        // }
+        // if (board.gui.squareTo && board.gui.scoredOnPreviousMove === false) {
+        //         clearPreviousMoveSquare(board.gui.squareFrom);
+        // }
+        // drawMove(board, squareFrom, squareTo);
+        // if (board.scores.get(board.side)[to] > 0) {
+        //         drawScoredSquare(squareTo);
+        //         board.blocks[to] = SOUTH_NORTH_BLOCK;
+        //         board.gui.scoredOnPreviousMove = true;
+        // } else {
+        //         board.gui.scoredOnPreviousMove = false;
+        // }
+        // board.ply += 1;
+        // if (board.side == SOUTH) {
+        //         board.side = NORTH;
+        // } else {
+        //         board.side = SOUTH;
+        // }
+        // getMoves(board);
+        // calcScores(board);
+        // board.gameEnded = checkGameEnded(board);
+        // if (board.gameEnded) {
+        //         drawGameEnded(board);
+        // }
+        // setPossibleScores(board);
+        // drawSides(board);
 }
 
 function calcSquareDim(svg, board) {
         const box = svg.getClientRects()[0];
         let width = (box.width - 40.0) / board.files;
         let height = (box.height - 40.0) / board.ranks;
-        console.log("w, h", box.width, box.height, width, height, svg.parentNode.getBoundingClientRect().width, svg.parentNode.getBoundingClientRect().height);
         return Math.min(width, height);
 }
 
@@ -279,17 +400,19 @@ function drawSquare(svg, board, file, rank) {
         rect.setAttribute('fill', squareColor);
 
         square.addEventListener("click", function() {
-                if (board.gui.selected < 0) {
-                        const piece = board.squares[idx];
-                        if (piece > 0 && (piece & board.side)) {
-                                selectPiece(board, idx);
+                if (board.gameEnded == NOT_ENDED) {
+                        if (board.gui.selected < 0) {
+                                const piece = board.squares[idx];
+                                if (piece > 0 && (piece & board.side)) {
+                                        selectPiece(board, idx);
+                                }
+                        } else if (board.gui.destinations.includes(idx)) {
+                                const from = board.gui.selected;
+                                deselectPiece(board);
+                                movePiece(board, from, idx);
+                        } else {
+                                deselectPiece(board);
                         }
-                } else if (board.gui.destinations.includes(idx)) {
-                        const from = board.gui.selected;
-                        deselectPiece(board);
-                        movePiece(board, from, idx);
-                } else {
-                        deselectPiece(board);
                 }
         });
         svg.appendChild(square);
@@ -394,14 +517,18 @@ function createGUI(topDiv, board) {
         board.gui.elems.svg = document.createElementNS(SVGNS, 'svg');
         board.gui.elems.svg.setAttribute('width', '100%');
         board.gui.elems.svg.setAttribute('height', '100%');
+        board.gui.elems.divGameInfo = document.createElement('div');
+        board.gui.elems.divGameInfo.setAttribute('class', 'sandy-game-info');
         board.gui.elems.divNorthSide = document.createElement('div');
         board.gui.elems.divNorthSide.setAttribute('class', 'sandy-north-side');
         board.gui.elems.divSouthSide = document.createElement('div');
         board.gui.elems.divSouthSide.setAttribute('class', 'sandy-south-side');
         board.gui.elems.divRecord = document.createElement('div');
+        board.gui.elems.divRecord.setAttribute('class', 'sandy-record');
         topDiv.appendChild(board.gui.elems.divLeft);
         topDiv.appendChild(board.gui.elems.divRight);
         board.gui.elems.divLeft.appendChild(board.gui.elems.svg);
+        board.gui.elems.divRight.appendChild(board.gui.elems.divGameInfo);
         board.gui.elems.divRight.appendChild(board.gui.elems.divNorthSide);
         board.gui.elems.divRight.appendChild(board.gui.elems.divSouthSide);
         board.gui.elems.divRight.appendChild(board.gui.elems.divRecord);
@@ -479,7 +606,10 @@ function drawScoredSquare(group) {
 }
 
 function getMoves(board) {
-
+        board.moves = [];
+        if (board.gameEnded) {
+                return;
+        }
         const rookDirections = [
                 0, -1,
                 -1, 0,
@@ -522,7 +652,6 @@ function getMoves(board) {
                 }
         }
 
-        board.moves = [];
         for (let file = 0; file < board.files; file++) {
                 for (let rank = 0; rank < board.ranks; rank++) {
                         const idx = fr(board, file, rank);
@@ -533,14 +662,16 @@ function getMoves(board) {
         }
 }
 
-function setMaxScores(board) {
+function setPossibleScores(board) {
         for (const side of SIDES) {
                 let total = 0;
                 for (let i = 0; i < board.scores.get(side).length; i++) {
-                        total += board.scores.get(side)[i];
+                        console.log(i, board.blocks[i], side, board.blocks[i] & side);
+                        if ((board.blocks[i] & side) == 0) {
+                                total += board.scores.get(side)[i];
+                        }
                 }
-                console.log(total);
-                board.maxScores.set(side, total);
+                board.possibleScores.set(side, total + board.currentScores.get(side));
         }
 }
 
@@ -548,7 +679,6 @@ function calcScores(board) {
         for (const side of SIDES) {
                 let total = 0;
                 for (let i = 0; i < board.scores.get(side).length; i++) {
-                        console.log("Scores:", board.scores.get(side)[i]);
                         if (board.squares[i] & side) {
                                 total += board.scores.get(side)[i];
                         }
@@ -559,9 +689,60 @@ function calcScores(board) {
 
 function initGame(board) {
         board.size = board.files * board.ranks;
-        setMaxScores(board);
+        setPossibleScores(board);
         calcScores(board);
         getMoves(board);
+}
+
+function checkGameEnded(board) {
+        const southScore = board.currentScores.get(SOUTH);
+        const northScore = board.currentScores.get(NORTH);
+        const southPossible = board.possibleScores.get(SOUTH);
+        const northPossible = board.possibleScores.get(NORTH);
+
+        if (board.moves.length == 0) {
+                if (southScore > northScore) {
+                        return SOUTH_WINS;
+                }
+                if (northScore > southScore) {
+                        return NORTH_WINS;
+                }
+                return DRAW;
+        }
+
+        if (southScore > northScore) {
+                if (southScore >= board.winningScores.get(SOUTH)) {
+                        return SOUTH_WINS;
+                }
+                if (northPossible < southScore) {
+                        return SOUTH_WINS;
+                }
+        } else if (northScore > southScore) {
+                if (northScore >= board.winningScores.get(NORTH)) {
+                        return NORTH_WINS;
+                }
+                if (southPossible < northScore) {
+                        return NORTH_WINS;
+                }
+        }
+
+        if (southScore == northScore) {
+                if (southScore >= board.winningScores.get(SOUTH) &&
+                        northScore < board.winningScores.get(NORTH)) {
+                        return SOUTH_WINS;
+                }
+                if (northScore >= board.winningScores.get(SOUTH) &&
+                        northScore < board.winningScores.get(NORTH)) {
+                        return SOUTH_WINS;
+                }
+
+                if (southScore >= board.winningScores.get(SOUTH) &&
+                        northScore >= board.winningScores.get(NORTH)) {
+                        return DRAW;
+                }
+        }
+
+        return NOT_ENDED;
 }
 
 function gameLoop(div, board) {

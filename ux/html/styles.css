@@ -1,0 +1,42 @@
+
+.sandy-container {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        height: 100vh;
+        width: 100vw;
+}
+.sandy-container-left {
+        border: solid 1px black;
+        width: 50%;
+}
+
+.sandy-container-right {
+        border: solid 1px black;
+}
+div.sandy-record {
+        border: solid 1px black;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        margin-top: 24px;
+        padding-top: 24px;
+}
+div.sandy-north-side {
+        border: solid 1px black;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+}
+div.sandy-south-side p  {
+        border: solid 1px black;
+        vertical-align: bottom;
+        margin-top: 24px;
+        padding-top: 24px;
+}
+.sandy-move-south {
+        padding-right: 6px;
+}
+
+.sandy-move-north::after {
+        content: "";
+        display: block;
+}
