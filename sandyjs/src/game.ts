@@ -1,4 +1,4 @@
-import { Variation } from "./variation.js";
+import { Variation } from "./variation.ts";
 
 const MAX_FILES = 100;
 const MAX_RANKS = 100;
@@ -9,7 +9,7 @@ const REGEX_FILES_RANKS = new RegExp(
 );
 const REGEX_PIECES = /(?<pieces>([rbRB_x]*))/;
 const REGEX_POINTS = /(?<points>(\d*))/;
-const REGEX_BLOCKS = /(?<blocks>([_xsnb]*))/;
+const REGEX_BLOCKS = /(?<blocks>([_xb]*))/;
 const REGEX_SIDE = /(?<side>([ns]))/;
 const REGEX_WINPOINTS = /(?<win>(\d+)*)/;
 const REGEX_PLY = /(?<ply>(\d+)*)/;
@@ -41,9 +41,9 @@ const DEFAULT_SIZE = "9x9";
 const DEFAULT_PIECES =
   "rrbbrbbrr_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_RRBBRBBRR";
 const DEFAULT_POINTS =
-  "010102020302020101000000000000000000000000000000000000000000000300000000000000003300000000000000003000000000000000000000000000000000000000000000101020203020201010";
+  "010102020302020101000000000000000000000000000000000000000000000300000000000000000000000000000000003000000000000000000000000000000000000000000000101020203020201010";
 const DEFAULT_BLOCKS =
-  "x_x_x_x_x_x_x_x_x_xbxbxbxbx_x_x_x_x_x_x_b_x_x_x_x_x_x_xbxbxbxbx_x_x_x_x_x_x_x_x_x";
+  "x_x_x_x_x_x_x_x_x_xbx_x_xbx_x_x_x_x_x_x_b_x_x_x_x_x_x_xbx_x_xbx_x_x_x_x_x_x_x_x_x";
 const DEFAULT_SIDE = "s";
 const DEFAULT_WINPOINTS = "12";
 const DEFAULT_PLY = "0";
@@ -74,7 +74,7 @@ const sideIndex = new Map();
 sideIndex.set(SOUTH, 0);
 sideIndex.set(NORTH, 1);
 
-const SI = function(side) {
+const SI = function(side: number) {
   return sideIndex.get(side);
 }
 
@@ -99,13 +99,13 @@ class Square {
   index: number;
   piece: [number, number];
   points: [number, number];
-  blocked: [boolean, boolean];
+  blocked: boolean;
 
   constructor(
     index: number,
     piece: [number, number] = [0, 0],
     points: [number, number] = [0, 0],
-    blocked: [boolean, boolean] = [false, false],
+    blocked: boolean = false
   ) {
     this.index = index;
     this.piece = piece;
@@ -114,14 +114,14 @@ class Square {
   };
 }
 
-type Move = {
+export type Move = {
   fromFile: number;
   fromRank: number;
   toFile: number;
   toRank: number;
 };
 
-class Position {
+export class Position {
   files: number;
   ranks: number;
   squares: Square[];
@@ -143,8 +143,8 @@ class Position {
     winPoints = 12,
   ) {
     if (squares.length === 0) {
-      for (let file = 0; file < files; file++) {
-        for (let rank = 0; rank < ranks; rank++) {
+      for (let rank = 0; rank < ranks; rank++) {
+        for (let file = 0; file < files; file++) {
           squares.push(new Square(fr(files, file, rank)));
         }
       }
@@ -160,11 +160,12 @@ class Position {
     this.gameStatus = GameStatus.InPlay;
     this.moves = [];
   };
+
 }
 
 export const loadPosition = function(
   positionString = DEFAULT_POSITION_STRING,
-) {
+): Position {
   let parsed_regex_position: RegExpExecArray | null;
   try {
     parsed_regex_position = REGEX_POSITION.exec(positionString);
@@ -214,19 +215,13 @@ export const loadPosition = function(
         piece = [0, 0];
     }
     const point: [number, number] = [Number(points[i * 2]), Number(points[i * 2 + 1])];
-    let block: [boolean, boolean];
+    let block: boolean;
     switch (blocks[i]) {
-      case "s":
-        block = [true, false];
-        break;
-      case "n":
-        block = [false, true];
-        break;
       case "b":
-        block = [true, true];
+        block = true;
         break;
       default:
-        block = [false, false];
+        block = false;
     }
     squares.push(new Square(i, piece, point, block));
   }
@@ -269,12 +264,8 @@ export const positionToString = function(position: Position) {
 
   for (const [index, square] of position.squares.entries()) {
     const blocked = square.blocked;
-    if (blocked[0] === false && blocked[1] === false) {
+    if (blocked === false) {
       positionString += index % 2 === 0 ? "x" : "_";
-    } else if (blocked[0] === true && blocked[1] === false) {
-      positionString += "s";
-    } else if (blocked[0] === false && blocked[1] === true) {
-      positionString += "n";
     } else {
       positionString += "b";
     }
@@ -297,7 +288,7 @@ export const positionToString = function(position: Position) {
 
 type PositionMove = {
   position: Position;
-  move: Move;
+  move: Move | null;
 };
 
 export class Game {
@@ -306,7 +297,7 @@ export class Game {
   constructor(position: Position) {
     const positionMove: PositionMove = {
       position: structuredClone(position),
-      move: null
+      move: null,
     };
     const node = new Variation(positionMove);
     this.position = position;
@@ -338,7 +329,7 @@ const getPieceMoves = function(game: Game, square: Square, directions: Direction
       const index = fr(game.position.files, toFile, toRank);
       const toSquare = game.position.squares[index];
       const toPiece = toSquare.piece[0] | toSquare.piece[1];
-      const toBlock = toSquare.blocked[0] || toSquare.blocked[1];
+      const toBlock = toSquare.blocked;
       if (toPiece || toBlock) {
         blocked = true;
       } else {
@@ -371,9 +362,14 @@ export const getMoves = function(game: Game): Move[] {
   return moves;
 };
 
-const moveSquares = function(position: Position, index: number) {
+export const newGameWithMoves = function(position: Position): Game {
+  const game = new Game(position);
+  game.position.moves = getMoves(game);
+  return game;
+}
+
+const moveSquares = function(position: Position, move: Move) {
   const side = position.side;
-  const move = position.moves[index];
   const files = position.files;
   const fromIndex = fr(files, move.fromFile, move.fromRank);
   const toIndex = fr(files, move.toFile, move.toRank);
@@ -415,20 +411,25 @@ const checkGameStatus = function(game: Game, side: number): GameStatus {
 
 export const move = function(game: Game, move: Move) {
   const position = game.position;
-  const index = position.moves.indexOf(move);
-  if (index == -1) {
-    throw `Move ${move} not found.`;
+  const foundMove = position.moves.find((key: Move) =>
+  (move.fromFile === key.fromFile && move.fromRank === key.fromRank &&
+    move.toFile === key.toFile && move.toRank === key.toRank));
+  if (!foundMove) {
+    throw {
+      name: "InvalidMoveError",
+      message: `${move.fromFile}.${move.fromRank}-${move.toRank}.${move.toFile} not found.`,
+    };
   }
-  moveSquares(position, index);
+  moveSquares(position, foundMove);
   position.ply += 1;
   position.gameStatus = checkGameStatus(game, position.side);
-  position.moves = getMoves(game);
   position.side = (SOUTH | NORTH) ^ position.side;
+  position.moves = getMoves(game);
   const positionMove: PositionMove = {
     position: structuredClone(position),
     move: structuredClone(move),
   };
-  game.history.appendChild(positionMove);
+  game.history = game.history.appendChild(positionMove);
 }
 // const g = new Game(loadPosition());
 // getMoves(g);
