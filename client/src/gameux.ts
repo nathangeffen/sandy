@@ -314,7 +314,7 @@ class GameUX {
   setupClock = function(this: GameUX) {
     const clock = document.createElement('div');
     clock.textContent = "PLACEHOLDER FOR CLOCK";
-    clock.setAttribute('class', 'sandy-clock');
+    clock.setAttribute('class', 'samax-clock');
     this.info.clock = clock;
     this.info.div!.appendChild(clock);
   }
@@ -322,18 +322,18 @@ class GameUX {
   setupUserActions = function(this: GameUX) {
     const flip = document.createElement('button');
     flip.textContent = "Flip board";
-    flip.setAttribute('class', 'sandy-button sandy-flip-button');
+    flip.setAttribute('class', 'samax-button samax-flip-button');
     this.info.div!.appendChild(flip);
     this.info.flip = flip;
 
     const offerDraw = document.createElement('button');
     offerDraw.textContent = "Offer draw";
-    offerDraw.setAttribute('class', 'sandy-button sandy-offer-draw-button');
+    offerDraw.setAttribute('class', 'samax-button samax-offer-draw-button');
     this.info.div!.appendChild(offerDraw);
     this.info.offerDraw = offerDraw;
 
     const resign = document.createElement('button');
-    resign.setAttribute('class', 'sandy-button sandy-resign-button');
+    resign.setAttribute('class', 'samax-button samax-resign-button');
     resign.textContent = 'Resign';
     this.info.div!.appendChild(resign);
     this.info.resign = resign;
@@ -341,14 +341,14 @@ class GameUX {
 
   setupScoreboard = function(this: GameUX) {
     const scoreboard = document.createElement('div');
-    scoreboard.setAttribute('class', 'sandy-scoreboard');
+    scoreboard.setAttribute('class', 'samax-scoreboard');
     this.info.scoreboard = scoreboard;
     this.info.div!.appendChild(scoreboard);
   }
 
   setupRecord = function(this: GameUX) {
     const record = document.createElement('div');
-    record.setAttribute('class', 'sandy-record');
+    record.setAttribute('class', 'samax-record');
     this.info.record = record;
     this.info.div!.appendChild(record);
   }
@@ -622,4 +622,4 @@ class GameUX {
 
 }
 
-const gameux: GameUX = new GameUX('sandy-game-1');
+const gameux: GameUX = new GameUX('samax-game-1');
