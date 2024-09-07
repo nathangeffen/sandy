@@ -1,9 +1,9 @@
 export class Variation<Type> {
   value: Type;
-  olderSibling: Variation<Type>;
-  youngerSibling: Variation<Type>;
-  parent: Variation<Type>;
-  oldestChild: Variation<Type>;
+  olderSibling: Variation<Type> | null;
+  youngerSibling: Variation<Type> | null;
+  parent: Variation<Type> | null;
+  oldestChild: Variation<Type> | null;
 
   constructor(value: Type) {
     this.value = value;
@@ -12,7 +12,7 @@ export class Variation<Type> {
     this.parent = null;
     this.oldestChild = null;
   }
-  appendChild = function(value: Type): Variation<Type> {
+  appendChild = function(this: Variation<Type>, value: Type): Variation<Type> {
     const variation = new Variation<Type>(value);
     if (this.oldestChild) {
       let node = this.oldestChild;
@@ -28,7 +28,7 @@ export class Variation<Type> {
     return variation;
   }
 
-  appendYoungerSibling = function(value: Type): Variation<Type> {
+  appendYoungerSibling = function(this: Variation<Type>, value: Type): Variation<Type> {
     const variation = new Variation<Type>(value);
     if (this.youngerSibling) {
       this.youngerSibling.olderSibling = variation;
@@ -39,7 +39,7 @@ export class Variation<Type> {
     return variation;
   }
 
-  promote = function() {
+  promote = function(this: Variation<Type>) {
     if (this.olderSibling) {
 
       // Some declarations to make the code easier to read
@@ -67,13 +67,13 @@ export class Variation<Type> {
     }
   }
 
-  appendOlderSibling = function(value: Type): Variation<Type> {
+  appendOlderSibling = function(this: Variation<Type>, value: Type): Variation<Type> {
     const variation = this.appendYoungerSibling(value);
-    this.promote(variation);
+    this.promote();
     return variation;
   }
 
-  oldestSibling = function(): Variation<Type> {
+  oldestSibling = function(this: Variation<Type>): Variation<Type> {
     let variation = this;
     while (variation.olderSibling) {
       variation = variation.olderSibling;
@@ -83,9 +83,9 @@ export class Variation<Type> {
 
   // Returns the least non-null significant variation immediately
   // attached to this one starting with younger sibling then older
-  // sibling then parent.
-  delete = function(): Variation<Type> {
-    let variation: Variation<Type> = null;
+  // sibling then parent. If no relatives, then null.
+  delete = function(this: Variation<Type>): Variation<Type> | null {
+    let variation: Variation<Type> | null = null;
     if (this.parent) {
       variation = this.parent;
       if (this.parent.oldestChild == this) {
@@ -103,12 +103,31 @@ export class Variation<Type> {
     return variation;
   }
 
-  head = function(): Variation<Type> {
+  head = function(this: Variation<Type>): Variation<Type> {
     let result = this;
     while (result.parent) {
       result = result.parent;
     }
     return result;
+  }
+
+
+  traverse = function(
+    this: Variation<Type>, processValue: (val: Type, location: number[]) => void, location: number[] = [0],
+  ) {
+    processValue(this.value, location);
+    if (this.youngerSibling) {
+      const count = location[location.length - 1];
+      location.push(count);
+      const variation = this.youngerSibling;
+      variation.traverse(processValue, location);
+      location.pop();
+    }
+    if (this.oldestChild) {
+      location[location.length - 1]++;
+      const variation = this.oldestChild;
+      variation.traverse(processValue, location);
+    }
   }
 }
 

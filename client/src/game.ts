@@ -11,7 +11,8 @@ const REGEX_PIECES = /(?<pieces>([rbRB_x]*))/;
 const REGEX_POINTS = /(?<points>(\d*))/;
 const REGEX_BLOCKS = /(?<blocks>([_xb]*))/;
 const REGEX_SIDE = /(?<side>([ns]))/;
-const REGEX_WINPOINTS = /(?<win>(\d+)*)/;
+const REGEX_STARTSCORE = /(?<startSouth>(\d+)*)-(?<startNorth>(\d+)*)/;
+const REGEX_WINSCORE = /(?<winSouth>(\d+)*)-(?<winNorth>(\d+)*)/;
 const REGEX_PLY = /(?<ply>(\d+)*)/;
 const REGEX_FROZEN = /(?<frozen>[tf])/;
 const REGEX_MOVES = /(?<moves>((\d+)-(\d+))*)/;
@@ -28,13 +29,16 @@ const REGEX_POSITION = new RegExp(
   "#" +
   REGEX_SIDE.source +
   "#" +
-  REGEX_WINPOINTS.source +
+  REGEX_STARTSCORE.source +
+  "#" +
+  REGEX_WINSCORE.source +
   "#" +
   REGEX_PLY.source +
   "#" +
   REGEX_FROZEN.source,
 );
 
+// TO DO - parse a game record
 const REGEX_GAME = new RegExp(REGEX_POSITION.source + "#" + REGEX_MOVES.source);
 
 const DEFAULT_SIZE = "9x9";
@@ -45,7 +49,8 @@ const DEFAULT_POINTS =
 const DEFAULT_BLOCKS =
   "x_x_x_x_x_x_x_x_x_xbx_x_xbx_x_x_x_x_x_x_b_x_x_x_x_x_x_xbx_x_xbx_x_x_x_x_x_x_x_x_x";
 const DEFAULT_SIDE = "s";
-const DEFAULT_WINPOINTS = "12";
+const DEFAULT_STARTSCORE = "0-1";
+const DEFAULT_WINSCORE = "12-12";
 const DEFAULT_PLY = "0";
 const DEFAULT_FROZEN = "t";
 export const DEFAULT_POSITION_STRING =
@@ -59,7 +64,9 @@ export const DEFAULT_POSITION_STRING =
   "#" +
   DEFAULT_SIDE +
   "#" +
-  DEFAULT_WINPOINTS +
+  DEFAULT_STARTSCORE +
+  "#" +
+  DEFAULT_WINSCORE +
   "#" +
   DEFAULT_PLY +
   "#" +
@@ -74,11 +81,11 @@ const sideIndex = new Map();
 sideIndex.set(SOUTH, 0);
 sideIndex.set(NORTH, 1);
 
-const SI = function(side: number) {
+export const SI = function(side: number) {
   return sideIndex.get(side);
 }
 
-enum GameStatus {
+export enum GameStatus {
   InPlay = 0,
   South = SOUTH,
   North = NORTH,
@@ -121,6 +128,16 @@ export type Move = {
   toRank: number;
 };
 
+export const toString = function(move: Move): string {
+  let text = "";
+  text += String.fromCharCode(97 + move.fromFile);
+  text += String(move.fromRank + 1);
+  text += '-';
+  text += String.fromCharCode(97 + move.toFile);
+  text += String(move.toRank + 1);
+  return text;
+}
+
 export class Position {
   files: number;
   ranks: number;
@@ -128,8 +145,9 @@ export class Position {
   side: number;
   ply: number;
   frozen: boolean;
-  winPoints: number;
-  points: [number, number];
+  score: [number, number];
+  startScore: [number, number];
+  winScore: [number, number];
   gameStatus: GameStatus;
   moves: Move[];
 
@@ -140,7 +158,8 @@ export class Position {
     side = SOUTH,
     ply = 0,
     frozen = true,
-    winPoints = 12,
+    startScore: [number, number] = [0, 0],
+    winScore: [number, number] = [12, 12],
   ) {
     if (squares.length === 0) {
       for (let rank = 0; rank < ranks; rank++) {
@@ -155,8 +174,9 @@ export class Position {
     this.side = side;
     this.ply = ply;
     this.frozen = frozen;
-    this.winPoints = winPoints;
-    this.points = [0, 0];
+    this.score = [startScore[0], startScore[1]];
+    this.startScore = startScore;
+    this.winScore = winScore;
     this.gameStatus = GameStatus.InPlay;
     this.moves = [];
   };
@@ -176,7 +196,8 @@ export const loadPosition = function(
     throw "Cannot parse position string";
   }
   const groups = parsed_regex_position.groups;
-  const { files, ranks, pieces, points, blocks, side, win, ply, frozen } = groups;
+  const { files, ranks, pieces, points, blocks, side, startSouth, startNorth,
+    winSouth, winNorth, ply, frozen } = groups;
   if (Number(files) > MAX_FILES) {
     throw `Maximum allowed for files is ${MAX_FILES} but ${files} given`;
   }
@@ -232,7 +253,8 @@ export const loadPosition = function(
     side === "s" ? SOUTH : NORTH,
     Number(ply),
     frozen === "t" ? true : false,
-    Number(win),
+    [Number(startSouth), Number(startNorth)],
+    [Number(winSouth), Number(winNorth)],
   );
 };
 
@@ -275,7 +297,14 @@ export const positionToString = function(position: Position) {
   positionString += position.side == SOUTH ? "s" : "n";
   positionString += "#";
 
-  positionString += position.winPoints.toString();
+  positionString += position.startScore[0].toString();
+  positionString += "-";
+  positionString += position.startScore[1].toString();
+  positionString += "#";
+
+  positionString += position.winScore[0].toString();
+  positionString += "-";
+  positionString += position.winScore[1].toString();
   positionString += "#";
 
   positionString += position.ply.toString();
@@ -286,7 +315,7 @@ export const positionToString = function(position: Position) {
   return positionString;
 };
 
-type PositionMove = {
+export type PositionMove = {
   position: Position;
   move: Move | null;
 };
@@ -350,13 +379,15 @@ const getPieceMoves = function(game: Game, square: Square, directions: Direction
 // rules limiting moves in the case of position repetition.
 export const getMoves = function(game: Game): Move[] {
   let moves: Move[] = [];
-  const side = game.position.side;
-  for (const square of game.position.squares) {
-    const piece = square.piece[SI(side)];
-    if (piece === ROOK) {
-      moves.push(...getPieceMoves(game, square, ROOK_DIRECTIONS));
-    } else if (piece === BISHOP) {
-      moves.push(...getPieceMoves(game, square, BISHOP_DIRECTIONS));
+  if (game.position.gameStatus === GameStatus.InPlay) {
+    const side = game.position.side;
+    for (const square of game.position.squares) {
+      const piece = square.piece[SI(side)];
+      if (piece === ROOK) {
+        moves.push(...getPieceMoves(game, square, ROOK_DIRECTIONS));
+      } else if (piece === BISHOP) {
+        moves.push(...getPieceMoves(game, square, BISHOP_DIRECTIONS));
+      }
     }
   }
   return moves;
@@ -377,13 +408,14 @@ const moveSquares = function(position: Position, move: Move) {
   position.squares[fromIndex].piece[SI(side)] = 0;
 };
 
-const calcPoints = function(position: Position, side: number): number {
+const calcScore = function(position: Position, side: number): number {
   const squares = position.squares;
   if (position.frozen) {
-    let total = 0;
+    let total = position.startScore[SI(side)];
     squares.forEach((square: Square) => {
-      if (square.piece[SI(side)])
+      if (square.piece[SI(side)]) {
         total += square.points[SI(side)];
+      }
     });
     return total;
   } else {
@@ -393,11 +425,11 @@ const calcPoints = function(position: Position, side: number): number {
 
 const checkGameStatus = function(game: Game, side: number): GameStatus {
   const position = game.position;
-  if (position.gameStatus > 0) {
+  if (position.gameStatus != GameStatus.InPlay) {
     return position.gameStatus;
   } else {
-    const points = calcPoints(position, side);
-    if (points < position.winPoints) {
+    const score = game.position.score[SI(side)];
+    if (score < position.winScore[SI(side)]) {
       return GameStatus.InPlay;
     } else {
       if (side === SOUTH) {
@@ -422,6 +454,7 @@ export const move = function(game: Game, move: Move) {
   }
   moveSquares(position, foundMove);
   position.ply += 1;
+  position.score[SI(position.side)] = calcScore(position, position.side);
   position.gameStatus = checkGameStatus(game, position.side);
   position.side = (SOUTH | NORTH) ^ position.side;
   position.moves = getMoves(game);
@@ -431,6 +464,3 @@ export const move = function(game: Game, move: Move) {
   };
   game.history = game.history.appendChild(positionMove);
 }
-// const g = new Game(loadPosition());
-// getMoves(g);
-// consolem.log(g.position.moves);
