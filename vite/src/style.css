@@ -1,0 +1,29 @@
+#samax-game-1 {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        height: 100vh;
+        width: 100vw;
+}
+
+.samax-clock {
+        margin-bottom:12px;
+}
+
+.samax-scoreboard, .samax-record {
+        white-space: pre;
+        margin-bottom:12px;
+}
+
+.samax-button {
+        background-color: #04AA6D;
+        color: white;
+        margin-right: 6px;
+        margin-bottom: 12px;
+        width: 150px;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+}
