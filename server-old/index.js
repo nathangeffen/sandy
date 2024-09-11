@@ -11,13 +11,18 @@ const io = new Server(server);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 app.get("/", (req, res) => {
-  res.sendFile(join(__dirname, "index2.html"));
+  res.sendFile(join(__dirname, "index.html"));
 });
 
-let counter = 0;
+app.use(express.static("."));
 
 io.on("connection", (socket) => {
-  console.log("a user connected", counter++);
+  console.log(
+    "a user connected",
+    io.engine.clientsCount,
+    io.of("/").sockets.size,
+    socket.id,
+  );
 
   socket.on("chat message", (msg) => {
     console.log("message: " + msg);
@@ -25,8 +30,12 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    --counter;
-    console.log("user disconnected", counter);
+    console.log(
+      "user disconnected",
+      io.engine.clientsCount,
+      io.of("/").sockets.size,
+      socket.id,
+    );
   });
 });
 
