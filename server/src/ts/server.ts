@@ -19,6 +19,23 @@ app.get("/", (req, res) => {
         res.sendFile(join(__dirname, "html/index.html"));
 });
 
+app.get("/play", (req, res) => {
+        res.sendFile(join(__dirname, "html/play.html"));
+});
+
+app.get("/position", (req, res) => {
+        res.sendFile(join(__dirname, "html/position.html"));
+});
+
+app.get("/analyze", (req, res) => {
+        res.sendFile(join(__dirname, "html/analyze.html"));
+});
+
+app.get("/findopponent", (req, res) => {
+        res.sendFile(join(__dirname, "html/findopponent.html"));
+});
+
+
 app.use(express.static(__dirname));
 
 io.on("connection", (socket) => {

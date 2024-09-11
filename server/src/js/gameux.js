@@ -29,7 +29,7 @@ var GameUXState;
 const DEFAULT_OPTIONS = {
     startPosition: DEFAULT_POSITION_STRING,
 };
-class GameUX {
+export class GameUX {
     constructor(divID, options = DEFAULT_OPTIONS) {
         this.gameUXState = GameUXState.WaitingUser;
         this.selectedPiece = null;
@@ -503,7 +503,7 @@ class GameUX {
         this.setEvents = function () {
             const gameUX = this;
             window.onresize = function () {
-                gameux.initialize(gameux.options);
+                gameUX.initialize(gameUX.options);
             };
             const position = this.game.position;
             for (let rank = 0; rank < position.ranks; rank++) {
@@ -516,8 +516,8 @@ class GameUX {
                 }
             }
             this.info.flip.addEventListener('click', function () {
-                gameux.board.onTop = (gameux.board.onTop === SOUTH) ? NORTH : SOUTH;
-                gameux.initialize(gameux.options);
+                gameUX.board.onTop = (gameUX.board.onTop === SOUTH) ? NORTH : SOUTH;
+                gameUX.initialize(gameUX.options);
             });
         };
         this.divID = divID;
@@ -530,4 +530,3 @@ class GameUX {
         this.initialize(options);
     }
 }
-const gameux = new GameUX('samax-game-1');
