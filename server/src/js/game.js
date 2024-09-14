@@ -186,6 +186,13 @@ export const loadPosition = function (positionString = DEFAULT_POSITION_STRING) 
     }
     return new Position(Number(files), Number(ranks), squares, side === "s" ? SOUTH : NORTH, Number(ply), frozen === "t" ? true : false, [Number(startSouth), Number(startNorth)], [Number(winSouth), Number(winNorth)]);
 };
+export const loadEmptyPosition = function (files, ranks) {
+    const squares = [];
+    for (let i = 0; i < files * ranks; i++) {
+        squares.push(new Square(i, [0, 0], [0, 0], false));
+    }
+    return new Position(files, ranks, squares, SOUTH, 0, true, [0, 0], [0, 0]);
+};
 export const positionToString = function (position) {
     let positionString = "";
     positionString += position.files + "x" + position.ranks + "#";

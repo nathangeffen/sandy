@@ -1,0 +1,20 @@
+extends base
+
+block content
+
+  h1 Analyze a game
+
+  #game-1(class="game")
+  include game.html
+
+  script(type="module", src="js/gameux.js")
+  script(src="/socket.io/socket.io.js")
+
+  script.
+    const socket = io();
+
+  script(type="module").
+   import {GameUX} from "/js/gameux.js";
+   new GameUX('game-1');
+
+

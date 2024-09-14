@@ -229,36 +229,36 @@ class GameUX {
         this.setupClock = function () {
             const clock = document.createElement('div');
             clock.textContent = "PLACEHOLDER FOR CLOCK";
-            clock.setAttribute('class', 'samax-clock');
+            clock.setAttribute('class', 'sakev-clock');
             this.info.clock = clock;
             this.info.div.appendChild(clock);
         };
         this.setupUserActions = function () {
             const flip = document.createElement('button');
             flip.textContent = "Flip board";
-            flip.setAttribute('class', 'samax-button samax-flip-button');
+            flip.setAttribute('class', 'sakev-button sakev-flip-button');
             this.info.div.appendChild(flip);
             this.info.flip = flip;
             const offerDraw = document.createElement('button');
             offerDraw.textContent = "Offer draw";
-            offerDraw.setAttribute('class', 'samax-button samax-offer-draw-button');
+            offerDraw.setAttribute('class', 'sakev-button sakev-offer-draw-button');
             this.info.div.appendChild(offerDraw);
             this.info.offerDraw = offerDraw;
             const resign = document.createElement('button');
-            resign.setAttribute('class', 'samax-button samax-resign-button');
+            resign.setAttribute('class', 'sakev-button sakev-resign-button');
             resign.textContent = 'Resign';
             this.info.div.appendChild(resign);
             this.info.resign = resign;
         };
         this.setupScoreboard = function () {
             const scoreboard = document.createElement('div');
-            scoreboard.setAttribute('class', 'samax-scoreboard');
+            scoreboard.setAttribute('class', 'sakev-scoreboard');
             this.info.scoreboard = scoreboard;
             this.info.div.appendChild(scoreboard);
         };
         this.setupRecord = function () {
             const record = document.createElement('div');
-            record.setAttribute('class', 'samax-record');
+            record.setAttribute('class', 'sakev-record');
             this.info.record = record;
             this.info.div.appendChild(record);
         };
@@ -530,4 +530,4 @@ class GameUX {
         this.initialize(options);
     }
 }
-const gameux = new GameUX('samax-game-1');
+const gameux = new GameUX('sakev-game-1');

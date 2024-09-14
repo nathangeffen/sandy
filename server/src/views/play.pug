@@ -1,0 +1,14 @@
+extends base
+
+block content
+  <div id="game-1" class="game"></div>
+  <script type="module" src="js/gameux.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+
+  script.
+    const socket = io();
+
+  script(type="module").
+   import {GameUX} from "/js/gameux.js";
+   new GameUX('game-1');
+

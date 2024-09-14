@@ -1,4 +1,4 @@
-import { ROOK, BISHOP, SOUTH, NORTH, fr, SI, toString, GameStatus, newGameWithMoves, loadPosition, move as gameMove, DEFAULT_POSITION_STRING, } from "./game.js";
+import { ROOK, BISHOP, SOUTH, NORTH, fr, SI, toString, GameStatus, newGameWithMoves, loadPosition, move as gameMove, DEFAULT_POSITION_STRING, positionToString, } from "./game.js";
 // Global constants
 const SVGNS = "http://www.w3.org/2000/svg";
 // COLORS
@@ -15,8 +15,8 @@ const NORTH_ROOK_IMAGE = '/images/Chess_rdt45.svg';
 const NORTH_BISHOP_IMAGE = '/images/Chess_bdt45.svg';
 const BLOCKED_SQUARE_IMAGE = '/images/cross-svgrepo-com.svg';
 const FROZEN_SQUARE_IMAGE = '/images/cross-frozen.svg';
-const DIV_X_MARGIN = 100;
-const DIV_Y_MARGIN = 100;
+const DIV_X_MARGIN = 150;
+const DIV_Y_MARGIN = 150;
 // Types and enums
 var GameUXState;
 (function (GameUXState) {
@@ -28,6 +28,7 @@ var GameUXState;
 ;
 const DEFAULT_OPTIONS = {
     startPosition: DEFAULT_POSITION_STRING,
+    boardOnly: false,
 };
 export class GameUX {
     constructor(divID, options = DEFAULT_OPTIONS) {
@@ -47,21 +48,26 @@ export class GameUX {
             flip: null,
             resign: null,
             scoreboard: null,
+            positionString: null,
             record: null,
         };
         this.initialize = function (options) {
             this.div.innerHTML = "";
             this.divWidth = this.div.offsetWidth;
             this.divHeight = this.div.offsetHeight;
-            // Todo: Pass a URL parameter with start position to loadPosition
             if (this.game === undefined) {
                 this.game = newGameWithMoves(loadPosition(options.startPosition));
             }
-            // Draw static elements
-            this.setupGame();
-            // Set events
-            this.setEvents();
-            this.updateAll();
+            if (options.boardOnly === true) {
+                this.setupBoard();
+            }
+            else {
+                // Draw static elements
+                this.setupGame();
+                // Set events
+                this.setEvents();
+                this.updateAll();
+            }
         };
         this.calcSquareDim = function (width, height, files, ranks) {
             const dimWidth = (width - DIV_X_MARGIN) / files;
@@ -115,12 +121,12 @@ export class GameUX {
             let x;
             let y;
             if (this.board.onTop === NORTH) {
-                x = file * this.squareDim + DIV_X_MARGIN / 2.0;
-                y = (this.game.position.ranks - rank - 1) * this.squareDim + DIV_Y_MARGIN / 2.0;
+                x = file * this.squareDim;
+                y = (this.game.position.ranks - rank - 1) * this.squareDim;
             }
             else {
-                x = (this.game.position.files - file - 1) * this.squareDim + DIV_X_MARGIN / 2.0;
-                y = rank * this.squareDim + DIV_Y_MARGIN / 2.0;
+                x = (this.game.position.files - file - 1) * this.squareDim;
+                y = rank * this.squareDim;
             }
             svg.setAttribute('x', String(x));
             svg.setAttribute('y', String(y));
@@ -155,8 +161,8 @@ export class GameUX {
                 else {
                     text.textContent = String.fromCharCode(97 + files - i - 1);
                 }
-                text.setAttribute('x', String(i * this.squareDim + this.squareDim / 2.5 + DIV_X_MARGIN / 2.0));
-                text.setAttribute('y', String(ranks * this.squareDim + DIV_Y_MARGIN / 1.5));
+                text.setAttribute('x', String(i * this.squareDim + this.squareDim / 2.5));
+                text.setAttribute('y', String(ranks * this.squareDim + 15));
                 group.appendChild(text);
             }
             if (this.board.svg) {
@@ -176,8 +182,8 @@ export class GameUX {
                 else {
                     text.textContent = String(i + 1);
                 }
-                text.setAttribute('x', String(files * this.squareDim + DIV_X_MARGIN / 1.8));
-                text.setAttribute('y', String(i * this.squareDim + DIV_Y_MARGIN / 2.0 + this.squareDim / 2.0));
+                text.setAttribute('x', String(files * this.squareDim + 10));
+                text.setAttribute('y', String(i * this.squareDim + this.squareDim / 2.0));
                 group.appendChild(text);
             }
             this.board.svg.appendChild(group);
@@ -195,20 +201,23 @@ export class GameUX {
             const group = document.createElementNS(SVGNS, 'g');
             this.board.southIndicator = document.createElementNS(SVGNS, 'text');
             this.board.northIndicator = document.createElementNS(SVGNS, 'text');
+            this.board.southIndicator.style.fontSize = 'x-small';
+            this.board.northIndicator.style.fontSize = 'x-small';
             if (this.board.onTop === NORTH) {
-                this.setupSideIndicator(group, this.board.southIndicator, DIV_X_MARGIN / 2.0 - 26, this.game.position.files * this.squareDim + DIV_Y_MARGIN / 2.0);
-                this.setupSideIndicator(group, this.board.northIndicator, DIV_X_MARGIN / 2.0 - 26, DIV_Y_MARGIN / 2.0 + 12);
+                this.setupSideIndicator(group, this.board.southIndicator, this.game.position.files * this.squareDim + 5, this.game.position.ranks * this.squareDim);
+                this.setupSideIndicator(group, this.board.northIndicator, this.game.position.files * this.squareDim + 5, 12);
             }
             else {
-                this.setupSideIndicator(group, this.board.northIndicator, DIV_X_MARGIN / 2.0 - 26, this.game.position.files * this.squareDim + DIV_Y_MARGIN / 2.0);
-                this.setupSideIndicator(group, this.board.southIndicator, DIV_X_MARGIN / 2.0 - 26, DIV_Y_MARGIN / 2.0 + 12);
+                this.setupSideIndicator(group, this.board.northIndicator, this.game.position.files * this.squareDim + 5, this.game.position.ranks * this.squareDim);
+                this.setupSideIndicator(group, this.board.southIndicator, this.game.position.files * this.squareDim + 5, 12);
             }
             this.board.svg.appendChild(group);
         };
         this.setupBoard = function () {
             this.board.svg = document.createElementNS(SVGNS, 'svg');
             const svg = this.board.svg;
-            const dim = Math.min(this.divWidth, this.divHeight);
+            let dim;
+            dim = Math.min(this.divWidth / 2.0, this.divHeight);
             svg.setAttribute('width', String(dim));
             svg.setAttribute('height', String(dim));
             const position = this.game.position;
@@ -229,38 +238,44 @@ export class GameUX {
         this.setupClock = function () {
             const clock = document.createElement('div');
             clock.textContent = "PLACEHOLDER FOR CLOCK";
-            clock.setAttribute('class', 'samax-clock');
+            clock.setAttribute('class', 'clock');
             this.info.clock = clock;
             this.info.div.appendChild(clock);
         };
         this.setupUserActions = function () {
             const flip = document.createElement('button');
             flip.textContent = "Flip board";
-            flip.setAttribute('class', 'samax-button samax-flip-button');
+            flip.setAttribute('class', 'button flip-button');
             this.info.div.appendChild(flip);
             this.info.flip = flip;
             const offerDraw = document.createElement('button');
             offerDraw.textContent = "Offer draw";
-            offerDraw.setAttribute('class', 'samax-button samax-offer-draw-button');
+            offerDraw.setAttribute('class', 'button offer-draw-button');
             this.info.div.appendChild(offerDraw);
             this.info.offerDraw = offerDraw;
             const resign = document.createElement('button');
-            resign.setAttribute('class', 'samax-button samax-resign-button');
+            resign.setAttribute('class', 'button resign-button');
             resign.textContent = 'Resign';
             this.info.div.appendChild(resign);
             this.info.resign = resign;
         };
         this.setupScoreboard = function () {
             const scoreboard = document.createElement('div');
-            scoreboard.setAttribute('class', 'samax-scoreboard');
+            scoreboard.setAttribute('class', 'scoreboard');
             this.info.scoreboard = scoreboard;
             this.info.div.appendChild(scoreboard);
         };
         this.setupRecord = function () {
             const record = document.createElement('div');
-            record.setAttribute('class', 'samax-record');
+            record.setAttribute('class', 'record');
             this.info.record = record;
             this.info.div.appendChild(record);
+        };
+        this.setupPositionString = function () {
+            const positionString = document.createElement('input');
+            positionString.setAttribute('class', 'position-string-holder');
+            this.info.positionString = positionString;
+            this.info.div.appendChild(positionString);
         };
         this.setupInfo = function () {
             // Result if this.game over
@@ -273,7 +288,6 @@ export class GameUX {
             // Move history
             //
             const infoDiv = document.createElement('div');
-            infoDiv.style.backgroundColor = 'LightGray';
             infoDiv.style.marginTop = String(DIV_X_MARGIN / 2.0) + "px";
             infoDiv.style.marginBottom = String(DIV_X_MARGIN / 2.0) + "px";
             infoDiv.style.padding = "12px";
@@ -282,6 +296,7 @@ export class GameUX {
             this.setupClock();
             this.setupUserActions();
             this.setupScoreboard();
+            this.setupPositionString();
             this.setupRecord();
         };
         this.setupGame = function () {
@@ -402,6 +417,9 @@ export class GameUX {
             text += "North score: " + String(northScore) + " To win: " + String(northToWin) + "\r\n";
             this.info.scoreboard.textContent = text;
         };
+        this.updatePositionString = function () {
+            this.info.positionString?.setAttribute('value', positionToString(this.game.position));
+        };
         this.updateRecord = function () {
             let text = "";
             const node = this.game.history.head();
@@ -425,6 +443,7 @@ export class GameUX {
         this.updateAll = function () {
             this.updateBoard();
             this.updateScoreboard();
+            this.updatePositionString();
             this.updateRecord();
         };
         this.selectPieceMoves = function (file, rank) {

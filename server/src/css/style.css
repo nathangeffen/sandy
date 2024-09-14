@@ -1,4 +1,6 @@
-#samax-game-1 {
+
+
+.game {
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap;
@@ -6,29 +8,21 @@
         width: 100vw;
 }
 
-.samax-clock {
+.info div {
+        margin-bottom: 12px;
+}
+
+.sakev-clock {
         margin-bottom:12px;
 }
 
-.samax-scoreboard, .samax-record {
+.sakev-scoreboard, .sakev-record {
         white-space: pre;
         margin-bottom:12px;
 }
 
-.samax-button {
-        background-color: #04AA6D;
-        color: white;
-        margin-right: 6px;
-        margin-bottom: 12px;
-        width: 150px;
-        padding: 15px 32px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-}
-
-.samax-record {
+.record {
         font-family: monospace;
         font-size: 16px;
 }
+

@@ -1,4 +1,4 @@
-#samax-game-1 {
+#sakev-game-1 {
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap;
@@ -6,16 +6,16 @@
         width: 100vw;
 }
 
-.samax-clock {
+.sakev-clock {
         margin-bottom:12px;
 }
 
-.samax-scoreboard, .samax-record {
+.sakev-scoreboard, .sakev-record {
         white-space: pre;
         margin-bottom:12px;
 }
 
-.samax-button {
+.sakev-button {
         background-color: #04AA6D;
         color: white;
         margin-right: 6px;

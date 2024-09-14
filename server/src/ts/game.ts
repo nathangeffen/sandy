@@ -258,6 +258,23 @@ export const loadPosition = function(
   );
 };
 
+export const loadEmptyPosition = function(files: number, ranks: number) {
+  const squares = [];
+  for (let i = 0; i < files * ranks; i++) {
+    squares.push(new Square(i, [0, 0], [0, 0], false));
+  }
+  return new Position(
+    files,
+    ranks,
+    squares,
+    SOUTH,
+    0,
+    true,
+    [0, 0],
+    [0, 0],
+  );
+}
+
 export const positionToString = function(position: Position) {
   let positionString = "";
   positionString += position.files + "x" + position.ranks + "#";
