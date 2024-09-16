@@ -1,25 +1,26 @@
-<div class="container game">
-        <div class="row">
-                <div class="col-xs-12 col-md-6 board">
-                        <svg>
-                        </svg>
+<div class="row">
+        <div class="col-xs-12 col-md-6 board">
+                <svg>
+                </svg>
+        </div>
+        <div class="col-xs-12 col-md-6 info">
+                <div class="clock">
+                        CLOCK WILL COME HERE
                 </div>
-                <div class="col-xs-12 col-md-6 info">
-                        <div class="clock">
-                                CLOCK WILL COME HERE
-                        </div>
-                        <div class="user-actions">
-                                <button class="btn btn-primary">Flip</button>
-                                <button class="btn btn-primary">Draw</button>
-                                <button class="btn btn-primary">Resign</button>
-                        </div>
-                        <div class="scoreboard">
-                        </div>
-                        <div class="position-string">
-                                <input type="text" />
-                        </div>
-                        <div class="record">
-                        </div>
+                <div class="user-actions">
+                        <button class="btn btn-primary flip">Flip</button>
+                        <button class="btn btn-primary draw">Draw</button>
+                        <button class="btn btn-primary resign">Resign</button>
+                </div>
+                <div class="scoreboard">
+                        <div class="result"></div>
+                        <div class="score"></div>
+                </div>
+                <div class="position-string">
+                        <input type="text" disabled />
+                        <button type="button" class="btn btn-secondary copy">Copy</button>
+                </div>
+                <div class="record">
                 </div>
         </div>
 </div>

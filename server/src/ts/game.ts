@@ -150,6 +150,7 @@ export class Position {
   winScore: [number, number];
   gameStatus: GameStatus;
   moves: Move[];
+  move: Move | null;
 
   constructor(
     files = 9,
@@ -179,6 +180,7 @@ export class Position {
     this.winScore = winScore;
     this.gameStatus = GameStatus.InPlay;
     this.moves = [];
+    this.move = null;
   };
 
 }
@@ -332,20 +334,11 @@ export const positionToString = function(position: Position) {
   return positionString;
 };
 
-export type PositionMove = {
-  position: Position;
-  move: Move | null;
-};
-
 export class Game {
   position: Position;
-  history: Variation<PositionMove>;
+  history: Variation<Position>;
   constructor(position: Position) {
-    const positionMove: PositionMove = {
-      position: structuredClone(position),
-      move: null,
-    };
-    const node = new Variation(positionMove);
+    const node = new Variation<Position>(structuredClone(position));
     this.position = position;
     this.history = node;
   };
@@ -470,14 +463,11 @@ export const move = function(game: Game, move: Move) {
     };
   }
   moveSquares(position, foundMove);
+  position.move = move;
   position.ply += 1;
   position.score[SI(position.side)] = calcScore(position, position.side);
   position.gameStatus = checkGameStatus(game, position.side);
   position.side = (SOUTH | NORTH) ^ position.side;
   position.moves = getMoves(game);
-  const positionMove: PositionMove = {
-    position: structuredClone(position),
-    move: structuredClone(move),
-  };
-  game.history = game.history.appendChild(positionMove);
+  game.history = game.history.appendChild(structuredClone(position));
 }

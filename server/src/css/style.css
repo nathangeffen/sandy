@@ -1,28 +1,26 @@
-
-
-.game {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        height: 100vh;
-        width: 100vw;
-}
-
-.info div {
+.clock, .user-actions, .scoreboard, .position-string  {
         margin-bottom: 12px;
 }
 
-.sakev-clock {
-        margin-bottom:12px;
-}
-
-.sakev-scoreboard, .sakev-record {
+.record, .scoreboard {
+        font-family: mono;
         white-space: pre;
-        margin-bottom:12px;
 }
 
-.record {
-        font-family: monospace;
-        font-size: 16px;
+.scoreboard .result {
+        color: red;
+}
+
+.record a.north::after {
+    content: "\a";
+}
+
+.record a {
+        text-decoration: none;
+        color: black;
+}
+
+.record a.south {
+        padding-right: 6px;
 }
 

@@ -28,7 +28,6 @@ var GameUXState;
 ;
 const DEFAULT_OPTIONS = {
     startPosition: DEFAULT_POSITION_STRING,
-    boardOnly: false,
 };
 export class GameUX {
     constructor(divID, options = DEFAULT_OPTIONS) {
@@ -52,22 +51,15 @@ export class GameUX {
             record: null,
         };
         this.initialize = function (options) {
-            this.div.innerHTML = "";
             this.divWidth = this.div.offsetWidth;
             this.divHeight = this.div.offsetHeight;
             if (this.game === undefined) {
                 this.game = newGameWithMoves(loadPosition(options.startPosition));
             }
-            if (options.boardOnly === true) {
-                this.setupBoard();
-            }
-            else {
-                // Draw static elements
-                this.setupGame();
-                // Set events
-                this.setEvents();
-                this.updateAll();
-            }
+            this.setupBoard();
+            this.setupGame();
+            this.setEvents();
+            this.updateAll();
         };
         this.calcSquareDim = function (width, height, files, ranks) {
             const dimWidth = (width - DIV_X_MARGIN) / files;
@@ -201,81 +193,65 @@ export class GameUX {
             const group = document.createElementNS(SVGNS, 'g');
             this.board.southIndicator = document.createElementNS(SVGNS, 'text');
             this.board.northIndicator = document.createElementNS(SVGNS, 'text');
-            this.board.southIndicator.style.fontSize = 'x-small';
-            this.board.northIndicator.style.fontSize = 'x-small';
+            this.board.southIndicator.style.fontSize = 'xx-small';
+            this.board.northIndicator.style.fontSize = 'xx-small';
             if (this.board.onTop === NORTH) {
-                this.setupSideIndicator(group, this.board.southIndicator, this.game.position.files * this.squareDim + 5, this.game.position.ranks * this.squareDim);
-                this.setupSideIndicator(group, this.board.northIndicator, this.game.position.files * this.squareDim + 5, 12);
+                this.setupSideIndicator(group, this.board.southIndicator, this.game.position.files * this.squareDim + 2, this.game.position.ranks * this.squareDim);
+                this.setupSideIndicator(group, this.board.northIndicator, this.game.position.files * this.squareDim + 2, 12);
             }
             else {
-                this.setupSideIndicator(group, this.board.northIndicator, this.game.position.files * this.squareDim + 5, this.game.position.ranks * this.squareDim);
-                this.setupSideIndicator(group, this.board.southIndicator, this.game.position.files * this.squareDim + 5, 12);
+                this.setupSideIndicator(group, this.board.northIndicator, this.game.position.files * this.squareDim + 2, this.game.position.ranks * this.squareDim);
+                this.setupSideIndicator(group, this.board.southIndicator, this.game.position.files * this.squareDim + 2, 12);
             }
             this.board.svg.appendChild(group);
         };
         this.setupBoard = function () {
-            this.board.svg = document.createElementNS(SVGNS, 'svg');
-            const svg = this.board.svg;
-            let dim;
-            dim = Math.min(this.divWidth / 2.0, this.divHeight);
-            svg.setAttribute('width', String(dim));
-            svg.setAttribute('height', String(dim));
-            const position = this.game.position;
-            this.squareDim = this.calcSquareDim(this.divWidth, this.divHeight, position.files, position.ranks);
-            this.board.squares = [];
-            for (let rank = 0; rank < position.ranks; rank++) {
-                for (let file = 0; file < position.files; file++) {
-                    const square = this.setupSquare(file, rank);
-                    this.board.squares.push(square);
-                    this.board.svg.appendChild(square);
+            this.board.svg = this.div.querySelector('svg');
+            const div = this.div.querySelector('div.board');
+            if (this.board.svg && div) {
+                this.board.svg.innerHTML = '';
+                const dim = div.offsetWidth;
+                this.board.svg.setAttribute('width', String(dim));
+                this.board.svg.setAttribute('height', String(dim));
+                const position = this.game.position;
+                this.squareDim = this.calcSquareDim(dim, dim, position.files, position.ranks);
+                this.board.squares = [];
+                for (let rank = 0; rank < position.ranks; rank++) {
+                    for (let file = 0; file < position.files; file++) {
+                        const square = this.setupSquare(file, rank);
+                        this.board.squares.push(square);
+                        this.board.svg.appendChild(square);
+                    }
                 }
+                this.setupBars();
+                this.setupSideIndicators();
             }
-            this.div.appendChild(svg);
-            this.setupBars();
-            this.setupSideIndicators();
         };
         // To do
         this.setupClock = function () {
-            const clock = document.createElement('div');
-            clock.textContent = "PLACEHOLDER FOR CLOCK";
-            clock.setAttribute('class', 'clock');
-            this.info.clock = clock;
-            this.info.div.appendChild(clock);
+            this.info.clock = this.info.div?.querySelector('.clock') || null;
         };
         this.setupUserActions = function () {
-            const flip = document.createElement('button');
-            flip.textContent = "Flip board";
-            flip.setAttribute('class', 'button flip-button');
-            this.info.div.appendChild(flip);
-            this.info.flip = flip;
-            const offerDraw = document.createElement('button');
-            offerDraw.textContent = "Offer draw";
-            offerDraw.setAttribute('class', 'button offer-draw-button');
-            this.info.div.appendChild(offerDraw);
-            this.info.offerDraw = offerDraw;
-            const resign = document.createElement('button');
-            resign.setAttribute('class', 'button resign-button');
-            resign.textContent = 'Resign';
-            this.info.div.appendChild(resign);
-            this.info.resign = resign;
+            this.info.flip = this.info.div?.querySelector('.flip') || null;
+            this.info.offerDraw = this.info.div?.querySelector('.draw') || null;
+            this.info.resign = this.info.div?.querySelector('.resign') || null;
         };
         this.setupScoreboard = function () {
-            const scoreboard = document.createElement('div');
-            scoreboard.setAttribute('class', 'scoreboard');
-            this.info.scoreboard = scoreboard;
-            this.info.div.appendChild(scoreboard);
-        };
-        this.setupRecord = function () {
-            const record = document.createElement('div');
-            record.setAttribute('class', 'record');
-            this.info.record = record;
-            this.info.div.appendChild(record);
+            this.info.scoreboard = this.info.div?.querySelector('.scoreboard') || null;
         };
         this.setupPositionString = function () {
-            const positionString = document.createElement('input');
-            positionString.setAttribute('class', 'position-string-holder');
-            this.info.positionString = positionString;
-            this.info.div.appendChild(positionString);
+            this.info.positionString = this.info.div?.querySelector('.position-string input') || null;
+            const copy = this.info.div?.querySelector('.position-string .copy');
+            const positionString = this.info.positionString;
+            if (positionString && copy) {
+                copy.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    navigator.clipboard.writeText(positionString.value);
+                });
+            }
+        };
+        this.setupRecord = function () {
+            this.info.record = this.info.div?.querySelector('.record') || null;
         };
         this.setupInfo = function () {
             // Result if this.game over
@@ -287,17 +263,14 @@ export class GameUX {
             // Resign
             // Move history
             //
-            const infoDiv = document.createElement('div');
-            infoDiv.style.marginTop = String(DIV_X_MARGIN / 2.0) + "px";
-            infoDiv.style.marginBottom = String(DIV_X_MARGIN / 2.0) + "px";
-            infoDiv.style.padding = "12px";
-            this.div.appendChild(infoDiv);
-            this.info.div = infoDiv;
-            this.setupClock();
-            this.setupUserActions();
-            this.setupScoreboard();
-            this.setupPositionString();
-            this.setupRecord();
+            this.info.div = this.div.querySelector('.info');
+            if (this.info.div) {
+                this.setupClock();
+                this.setupUserActions();
+                this.setupScoreboard();
+                this.setupPositionString();
+                this.setupRecord();
+            }
         };
         this.setupGame = function () {
             this.setupBoard();
@@ -354,91 +327,104 @@ export class GameUX {
             frozen.setAttribute('stroke', "Red");
         };
         this.updateSideIndicators = function () {
-            let sideText;
-            sideText = 'S';
-            if (this.game.position.side === SOUTH) {
-                sideText += "*";
+            if (this.board.southIndicator && this.board.northIndicator) {
+                let sideText;
+                sideText = 'S';
+                if (this.game.position.side === SOUTH) {
+                    sideText += "*";
+                }
+                this.board.southIndicator.textContent = sideText;
+                sideText = 'N';
+                if (this.game.position.side === NORTH) {
+                    sideText += "*";
+                }
+                this.board.northIndicator.textContent = sideText;
             }
-            this.board.southIndicator.textContent = sideText;
-            sideText = 'N';
-            if (this.game.position.side === NORTH) {
-                sideText += "*";
-            }
-            this.board.northIndicator.textContent = sideText;
         };
         this.updateBoard = function () {
-            const position = this.game.position;
-            this.updateSideIndicators();
-            for (let rank = 0; rank < position.ranks; rank++) {
-                for (let file = 0; file < position.files; file++) {
-                    const index = fr(position.files, file, rank);
-                    const square = this.board.squares[index];
-                    const piece = position.squares[index].piece;
-                    const dynamicElements = square.querySelectorAll('.dynamic');
-                    for (const element of dynamicElements) {
-                        element.remove();
-                    }
-                    const lastMove = this.game.history.value.move;
-                    if (lastMove) {
-                        if ((file === lastMove.fromFile && rank === lastMove.fromRank) ||
-                            (file === lastMove.toFile && rank === lastMove.toRank)) {
-                            this.setLastMove(square);
+            if (this.board.svg) {
+                const position = this.game.position;
+                this.updateSideIndicators();
+                for (let rank = 0; rank < position.ranks; rank++) {
+                    for (let file = 0; file < position.files; file++) {
+                        const index = fr(position.files, file, rank);
+                        const square = this.board.squares[index];
+                        const piece = position.squares[index].piece;
+                        const dynamicElements = square.querySelectorAll('.dynamic');
+                        for (const element of dynamicElements) {
+                            element.remove();
                         }
-                    }
-                    if ((piece[0] | piece[1]) > 0) {
-                        this.placePiece(square, piece);
-                        const points = position.squares[index].points;
-                        if ((piece[0] && points[0]) || (piece[1] && points[1]) &&
-                            this.game.position.frozen) {
-                            this.setFrozen(square);
+                        const lastMove = this.game.history.value.move;
+                        if (lastMove) {
+                            if ((file === lastMove.fromFile && rank === lastMove.fromRank) ||
+                                (file === lastMove.toFile && rank === lastMove.toRank)) {
+                                this.setLastMove(square);
+                            }
+                        }
+                        if ((piece[0] | piece[1]) > 0) {
+                            this.placePiece(square, piece);
+                            const points = position.squares[index].points;
+                            if ((piece[0] && points[0]) || (piece[1] && points[1]) &&
+                                this.game.position.frozen) {
+                                this.setFrozen(square);
+                            }
                         }
                     }
                 }
             }
         };
         this.updateScoreboard = function () {
-            let text = "";
-            switch (this.game.position.gameStatus) {
-                case GameStatus.Tie:
-                    text += "Game drawn\n";
-                    break;
-                case GameStatus.North:
-                    text += "North wins\n";
-                    break;
-                case GameStatus.South:
-                    text += "South wins\n";
-                    break;
-            }
-            const southScore = this.game.position.score[SI(SOUTH)];
-            const northScore = this.game.position.score[SI(NORTH)];
-            const southToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - southScore);
-            const northToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - northScore);
-            text += "South score: " + String(southScore) + " To win: " + String(southToWin) + "\r\n";
-            text += "North score: " + String(northScore) + " To win: " + String(northToWin) + "\r\n";
-            this.info.scoreboard.textContent = text;
-        };
-        this.updatePositionString = function () {
-            this.info.positionString?.setAttribute('value', positionToString(this.game.position));
-        };
-        this.updateRecord = function () {
-            let text = "";
-            const node = this.game.history.head();
-            node.traverse((positionMove, location) => {
-                const move = positionMove.move;
-                if (move) {
-                    if (positionMove.position.side === NORTH) {
-                        text += String(Math.floor(location[location.length - 1] / 2) + 1) + ". ";
-                    }
-                    text += toString(move);
-                    if (positionMove.position.side === SOUTH) {
-                        text += '\r\n';
-                    }
-                    else {
-                        text += " ";
+            if (this.info.scoreboard) {
+                const resultDiv = this.info.scoreboard.querySelector('div.result');
+                if (resultDiv) {
+                    switch (this.game.position.gameStatus) {
+                        case GameStatus.Tie:
+                            resultDiv.textContent = "Game tied";
+                            break;
+                        case GameStatus.North:
+                            resultDiv.textContent = "North wins";
+                            break;
+                        case GameStatus.South:
+                            resultDiv.textContent = "South wins";
+                            break;
                     }
                 }
-            });
-            this.info.record.textContent = text;
+                const southScore = this.game.position.score[SI(SOUTH)];
+                const northScore = this.game.position.score[SI(NORTH)];
+                const southToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - southScore);
+                const northToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - northScore);
+                let text = "South score: " + String(southScore) + " To win: " + String(southToWin) + "\r\n";
+                text += "North score: " + String(northScore) + " To win: " + String(northToWin) + "\r\n";
+                this.info.scoreboard.textContent = text;
+            }
+        };
+        this.updatePositionString = function () {
+            if (this.info.positionString) {
+                this.info.positionString.setAttribute('value', positionToString(this.game.position));
+            }
+        };
+        this.updateRecord = function () {
+            if (this.info.record) {
+                this.info.record.innerHTML = "";
+                this.game.history.head().traverse((position) => {
+                    const elem = document.createElement('a');
+                    elem.setAttribute('href', '#');
+                    let text;
+                    if (position.move) {
+                        if (position.side === NORTH) {
+                            text = String(1 + Math.floor(position.ply / 2)) + ' ' +
+                                toString(position.move);
+                            elem.setAttribute('class', 'south');
+                        }
+                        else {
+                            text = toString(position.move);
+                            elem.setAttribute('class', 'north');
+                        }
+                        elem.textContent = text;
+                        this.info.record.appendChild(elem);
+                    }
+                });
+            }
         };
         this.updateAll = function () {
             this.updateBoard();
@@ -534,10 +520,12 @@ export class GameUX {
                     });
                 }
             }
-            this.info.flip.addEventListener('click', function () {
-                gameUX.board.onTop = (gameUX.board.onTop === SOUTH) ? NORTH : SOUTH;
-                gameUX.initialize(gameUX.options);
-            });
+            if (this.info.flip) {
+                this.info.flip.addEventListener('click', function () {
+                    gameUX.board.onTop = (gameUX.board.onTop === SOUTH) ? NORTH : SOUTH;
+                    gameUX.initialize(gameUX.options);
+                });
+            }
         };
         this.divID = divID;
         const mainDiv = document.getElementById(divID);

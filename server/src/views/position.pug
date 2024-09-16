@@ -3,34 +3,11 @@ extends base
 block content
   h1 Create a position
 
-
-  .row
-    div(class="col-xs-12 col-md-6")
-      <form id="position-files-ranks">
-        <div class="mb-3">
-        <label  class="form-label" for="files">Files</label>
-        <input class="form-control" type="number" id="files" name="files" value="9">
-        <label class="form-label" for="ranks">Ranks</label>
-        <input class="form-control" type="number" id="ranks" name="ranks" value="9">
-        <label class="form-label" for="position-string">Or enter a position string</label>
-        <input class="form-control" type="text" id="position-string" name="position-string">
-        </div>
-        <div class="mb-3">
-        <input type="submit" value="Create board" class="btn btn-primary" />
-        </div>
-      </form>
-
   #position-1(class="game")
+    include position.html
 
   script(type="module", src="js/positionux.js")
-
   script(type="module").
-    import {processForm} from "/js/positionux.js";
-    let positionUX;
-    const form = document.querySelector('#position-files-ranks');
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      positionUX = processForm("position-1", form);
-      form.style.display = "none";
-        });
+   import {processPositions} from "/js/positionux.js";
+   processPositions();
 

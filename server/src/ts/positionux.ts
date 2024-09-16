@@ -28,7 +28,6 @@ export class PositionUX {
     this.positionString = positionToString(this.position);
     this.gameUX = new GameUX(divID, {
       startPosition: this.positionString,
-      boardOnly: true,
     });
     this.gameUX.updateBoard();
   }
@@ -36,20 +35,41 @@ export class PositionUX {
 
 export const processForm = function(divID: string, form: HTMLFormElement) {
   const formData = new FormData(form);
-  try {
-    const files: number = Number(formData.get('files'));
-    const ranks: number = Number(formData.get('ranks'));
-    const positionString: string = String(formData.get('position-string'));
-    try {
-      return new PositionUX(divID, {
-        files: files,
-        ranks: ranks,
-        positionString: positionString
-      });
-    } catch (err) {
-      throw "Problem creating position";
-    }
-  } catch (err) {
-    throw `Problem with form: ${err}`;
-  }
+  // try {
+  const files: number = Number(formData.get('files'));
+  const ranks: number = Number(formData.get('ranks'));
+  const positionString: string = String(formData.get('position-string'));
+  //try {
+  return new PositionUX(divID, {
+    files: files,
+    ranks: ranks,
+    positionString: positionString
+  });
+  //   } catch (err) {
+  //     throw "Problem creating position";
+  //   }
+  // } catch (err) {
+  //   throw `Problem with form: ${err}`;
+  // }
 };
+
+export const processPositions = function() {
+  const divs = document.querySelectorAll('div.setup-position');
+  for (const div of divs) {
+    let positionUX;
+    const form: HTMLFormElement | null = div.querySelector('div.position-files-ranks form');
+    const position: HTMLDivElement | null = div.querySelector('div.position');
+    if (position) {
+      position.style.visibility = "hidden";
+    }
+    if (form && position) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        position.style.visibility = "visible";
+        positionUX = processForm("position-1", form);
+        form.style.display = "none";
+        console.log("A", position);
+      });
+    }
+  }
+}

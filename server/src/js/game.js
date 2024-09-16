@@ -122,6 +122,7 @@ export class Position {
         this.winScore = winScore;
         this.gameStatus = GameStatus.InPlay;
         this.moves = [];
+        this.move = null;
     }
     ;
 }
@@ -242,11 +243,7 @@ export const positionToString = function (position) {
 };
 export class Game {
     constructor(position) {
-        const positionMove = {
-            position: structuredClone(position),
-            move: null,
-        };
-        const node = new Variation(positionMove);
+        const node = new Variation(structuredClone(position));
         this.position = position;
         this.history = node;
     }
@@ -369,14 +366,11 @@ export const move = function (game, move) {
         };
     }
     moveSquares(position, foundMove);
+    position.move = move;
     position.ply += 1;
     position.score[SI(position.side)] = calcScore(position, position.side);
     position.gameStatus = checkGameStatus(game, position.side);
     position.side = (SOUTH | NORTH) ^ position.side;
     position.moves = getMoves(game);
-    const positionMove = {
-        position: structuredClone(position),
-        move: structuredClone(move),
-    };
-    game.history = game.history.appendChild(positionMove);
+    game.history = game.history.appendChild(structuredClone(position));
 };
