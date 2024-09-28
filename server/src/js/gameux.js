@@ -1,4 +1,4 @@
-import { ROOK, BISHOP, SOUTH, NORTH, fr, SI, toString, GameStatus, newGameWithMoves, loadPosition, move as gameMove, DEFAULT_POSITION_STRING, positionToString, } from "./game.js";
+import { ROOK, BISHOP, SOUTH, NORTH, fr, SI, toString, GameStatus, GameOverReason, newGameWithMoves, loadPosition, move as gameMove, DEFAULT_POSITION_STRING, positionToString, } from "./game.js";
 // Global constants
 const SVGNS = "http://www.w3.org/2000/svg";
 // COLORS
@@ -7,31 +7,25 @@ const ODD_SQUARE = 'SlateGray';
 const SELECTED_SQUARE = 'DarkCyan';
 const TRACER_COLOR = 'DarkSlateBlue';
 const LAST_MOVE_COLOR = 'Yellow';
-const POINTS_SOUTH = 'DarkRed';
-const POINTS_NORTH = '#145a32';
+const SELECTED_SQUARE_COLOR = '#43cb7e';
+const POINTS_SOUTH = 'White';
+const POINTS_NORTH = 'Black';
 const SOUTH_ROOK_IMAGE = '/images/Chess_rlt45.svg';
 const SOUTH_BISHOP_IMAGE = '/images/Chess_blt45.svg';
 const NORTH_ROOK_IMAGE = '/images/Chess_rdt45.svg';
 const NORTH_BISHOP_IMAGE = '/images/Chess_bdt45.svg';
 const BLOCKED_SQUARE_IMAGE = '/images/cross-svgrepo-com.svg';
 const FROZEN_SQUARE_IMAGE = '/images/cross-frozen.svg';
-const DIV_X_MARGIN = 150;
-const DIV_Y_MARGIN = 150;
-// Types and enums
-var GameUXState;
-(function (GameUXState) {
-    GameUXState[GameUXState["WaitingUser"] = 0] = "WaitingUser";
-    GameUXState[GameUXState["WaitingOtherPlayer"] = 1] = "WaitingOtherPlayer";
-    GameUXState[GameUXState["PieceSelected"] = 2] = "PieceSelected";
-    GameUXState[GameUXState["GameOver"] = 3] = "GameOver";
-})(GameUXState || (GameUXState = {}));
+const DIV_X_MARGIN = 50;
+const DIV_Y_MARGIN = 200;
 ;
 const DEFAULT_OPTIONS = {
     startPosition: DEFAULT_POSITION_STRING,
+    setupEvents: true,
 };
 export class GameUX {
     constructor(divID, options = DEFAULT_OPTIONS) {
-        this.gameUXState = GameUXState.WaitingUser;
+        this.gameUXState = 0 /* GameUXState.WaitingUser */;
         this.selectedPiece = null;
         this.board = {
             svg: null,
@@ -56,15 +50,26 @@ export class GameUX {
             if (this.game === undefined) {
                 this.game = newGameWithMoves(loadPosition(options.startPosition));
             }
-            this.setupBoard();
             this.setupGame();
-            this.setEvents();
+            if (options.setupEvents) {
+                this.setupEvents();
+            }
             this.updateAll();
         };
         this.calcSquareDim = function (width, height, files, ranks) {
-            const dimWidth = (width - DIV_X_MARGIN) / files;
-            const dimHeight = (height - DIV_Y_MARGIN) / ranks;
-            return Math.min(dimWidth, dimHeight);
+            let result;
+            let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+            if (width <= vh) {
+                result = (width - DIV_X_MARGIN) / files;
+            }
+            else {
+                result = (height - DIV_Y_MARGIN) / ranks;
+            }
+            const maxSize = (height - DIV_Y_MARGIN) / 6;
+            if (result > maxSize) {
+                result = maxSize;
+            }
+            return result;
         };
         this.setupBlocked = function (square) {
             const blocked = document.createElementNS(SVGNS, 'image');
@@ -96,7 +101,7 @@ export class GameUX {
                     this.placePoint(svg, points[0], POINTS_SOUTH, fontSize, offset, fontSize + offset);
                 }
             }
-            else {
+            if (points[1]) {
                 if (this.board.onTop === NORTH) {
                     this.placePoint(svg, points[1], POINTS_NORTH, fontSize, offset, fontSize + offset);
                 }
@@ -124,6 +129,8 @@ export class GameUX {
             svg.setAttribute('y', String(y));
             svg.setAttribute('height', String(this.squareDim));
             svg.setAttribute('width', String(this.squareDim));
+            svg.dataset.file = String(file);
+            svg.dataset.rank = String(rank);
             square.setAttribute('x', "0");
             square.setAttribute('y', "0");
             square.setAttribute('height', String(this.squareDim));
@@ -205,7 +212,7 @@ export class GameUX {
             }
             this.board.svg.appendChild(group);
         };
-        this.setupBoard = function () {
+        this.setupBoard = function (squareDim = 0) {
             this.board.svg = this.div.querySelector('svg');
             const div = this.div.querySelector('div.board');
             if (this.board.svg && div) {
@@ -214,7 +221,7 @@ export class GameUX {
                 this.board.svg.setAttribute('width', String(dim));
                 this.board.svg.setAttribute('height', String(dim));
                 const position = this.game.position;
-                this.squareDim = this.calcSquareDim(dim, dim, position.files, position.ranks);
+                this.squareDim = squareDim || this.calcSquareDim(dim, dim, position.files, position.ranks);
                 this.board.squares = [];
                 for (let rank = 0; rank < position.ranks; rank++) {
                     for (let file = 0; file < position.files; file++) {
@@ -277,10 +284,10 @@ export class GameUX {
             this.setupInfo();
         };
         this.placePiece = function (square, piece) {
-            const pieceElement = document.createElementNS(SVGNS, 'image');
             const pieceDim = this.squareDim * (3.0 / 4.0);
             const x = (this.squareDim - pieceDim) / 2.0;
             const y = x;
+            const pieceElement = document.createElementNS(SVGNS, 'image');
             pieceElement.setAttribute('x', String(x));
             pieceElement.setAttribute('y', String(y));
             pieceElement.setAttribute('width', String(pieceDim));
@@ -373,29 +380,61 @@ export class GameUX {
                 }
             }
         };
+        this.reasonText = function (reason, ply) {
+            switch (reason) {
+                case GameOverReason.Agreement:
+                    return "Draw agreed";
+                case GameOverReason.NoMoves:
+                    return "No moves possible";
+                case GameOverReason.PlyWithoutPoints:
+                    return `No points scored for ${ply} ply`;
+                case GameOverReason.PointsScored:
+                    return "Winning points scored";
+                default:
+                    return "";
+            }
+        };
         this.updateScoreboard = function () {
             if (this.info.scoreboard) {
                 const resultDiv = this.info.scoreboard.querySelector('div.result');
                 if (resultDiv) {
                     switch (this.game.position.gameStatus) {
                         case GameStatus.Tie:
-                            resultDiv.textContent = "Game tied";
+                            resultDiv.textContent = "Game tied: " +
+                                this.reasonText(this.game.position.gameOverReason, this.game.position.plyTillEnd);
                             break;
                         case GameStatus.North:
-                            resultDiv.textContent = "North wins";
+                            resultDiv.textContent = "North wins: " +
+                                this.reasonText(this.game.position.gameOverReason, this.game.position.plyTillEnd);
+                            ;
                             break;
                         case GameStatus.South:
-                            resultDiv.textContent = "South wins";
+                            resultDiv.textContent = "South wins: " +
+                                this.reasonText(this.game.position.gameOverReason, this.game.position.plyTillEnd);
+                            ;
                             break;
                     }
                 }
-                const southScore = this.game.position.score[SI(SOUTH)];
-                const northScore = this.game.position.score[SI(NORTH)];
-                const southToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - southScore);
-                const northToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - northScore);
-                let text = "South score: " + String(southScore) + " To win: " + String(southToWin) + "\r\n";
-                text += "North score: " + String(northScore) + " To win: " + String(northToWin) + "\r\n";
-                this.info.scoreboard.textContent = text;
+                const plyLeft = this.info.scoreboard.querySelector('div.ply-left');
+                if (plyLeft) {
+                    plyLeft.textContent = "Ply till result:" +
+                        (this.game.position.plyTillEnd - (this.game.position.ply - this.game.position.plyLastPoints));
+                }
+                const scoreDiv = this.info.scoreboard.querySelector('div.score');
+                if (scoreDiv) {
+                    const southScore = this.game.position.score[SI(SOUTH)];
+                    const northScore = this.game.position.score[SI(NORTH)];
+                    const southToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - southScore);
+                    const northToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - northScore);
+                    const northDiv = scoreDiv.querySelector('div.north-score');
+                    if (northDiv) {
+                        northDiv.textContent = "North score: " + String(northScore) + " To win: " + String(northToWin);
+                    }
+                    const southDiv = scoreDiv.querySelector('div.south-score');
+                    if (southDiv) {
+                        southDiv.textContent = "South score: " + String(southScore) + " To win: " + String(southToWin);
+                    }
+                }
             }
         };
         this.updatePositionString = function () {
@@ -441,6 +480,20 @@ export class GameUX {
             }
             return pieceMoves;
         };
+        this.setSelectedSquare = function (file, rank) {
+            const square = this.board.squares[fr(this.game.position.files, file, rank)];
+            if (square) {
+                const selectedElement = document.createElementNS(SVGNS, 'rect');
+                selectedElement.setAttribute('x', '0');
+                selectedElement.setAttribute('y', '0');
+                selectedElement.setAttribute('width', String(this.squareDim));
+                selectedElement.setAttribute('height', String(this.squareDim));
+                selectedElement.setAttribute('fill', SELECTED_SQUARE_COLOR);
+                selectedElement.setAttribute('fill-opacity', '20%');
+                selectedElement.setAttribute('class', 'selected-square dynamic');
+                square.appendChild(selectedElement);
+            }
+        };
         this.setTracerOn = function (file, rank) {
             const moves = this.selectPieceMoves(file, rank);
             for (const move of moves) {
@@ -464,6 +517,7 @@ export class GameUX {
         this.selectPiece = function (square, file, rank) {
             square.setAttribute('fill', SELECTED_SQUARE);
             this.selectedPiece = [file, rank];
+            this.setSelectedSquare(file, rank);
             this.setTracerOn(file, rank);
         };
         this.movePiece = function (file, rank) {
@@ -485,45 +539,49 @@ export class GameUX {
         };
         this.updateBasedOnState = function (square, file, rank) {
             switch (this.gameUXState) {
-                // Temporary measure until 2-player-mode working
-                case GameUXState.WaitingOtherPlayer:
-                case GameUXState.WaitingUser:
-                    this.selectPiece(square, file, rank);
-                    this.gameUXState = GameUXState.PieceSelected;
+                case 1 /* GameUXState.WaitingOtherPlayer */:
+                case 0 /* GameUXState.WaitingUser */:
+                    if (square) {
+                        this.selectPiece(square, file, rank);
+                        this.gameUXState = 2 /* GameUXState.PieceSelected */;
+                    }
                     break;
-                case GameUXState.PieceSelected:
+                case 2 /* GameUXState.PieceSelected */:
                     if (this.movePiece(file, rank) === true) {
-                        this.gameUXState = GameUXState.WaitingOtherPlayer;
+                        this.gameUXState = 1 /* GameUXState.WaitingOtherPlayer */;
                     }
                     else {
-                        this.gameUXState = GameUXState.WaitingUser;
+                        this.gameUXState = 0 /* GameUXState.WaitingUser */;
                     }
                     this.updateAll();
                     break;
-                case GameUXState.GameOver:
+                case 3 /* GameUXState.GameOver */:
                 default:
                     break;
             }
         };
-        this.setEvents = function () {
-            const gameUX = this;
-            window.onresize = function () {
-                gameUX.initialize(gameUX.options);
-            };
-            const position = this.game.position;
-            for (let rank = 0; rank < position.ranks; rank++) {
-                for (let file = 0; file < position.files; file++) {
-                    const index = fr(position.files, file, rank);
-                    const square = this.board.squares[index];
-                    square.addEventListener('click', function () {
-                        gameUX.updateBasedOnState(square, file, rank);
-                    });
+        this.getSquare = function (x, y) {
+            for (const square of this.board.squares) {
+                const rect = square.getBoundingClientRect();
+                if (rect.left <= x && rect.top <= y &&
+                    rect.right >= x && rect.bottom >= y) {
+                    return square;
                 }
             }
+            return null;
+        };
+        this.redrawBoard = function (squareDim = 0) {
+            this.setupBoard(squareDim);
+            this.updateBoard();
+        };
+        this.setupEvents = function () {
+            const gameUX = this;
+            this.setupBoardEvents();
             if (this.info.flip) {
-                this.info.flip.addEventListener('click', function () {
+                this.info.flip.addEventListener('click', function (e) {
+                    e.preventDefault();
                     gameUX.board.onTop = (gameUX.board.onTop === SOUTH) ? NORTH : SOUTH;
-                    gameUX.initialize(gameUX.options);
+                    gameUX.redrawBoard();
                 });
             }
         };
@@ -535,5 +593,69 @@ export class GameUX {
         this.div = mainDiv;
         this.options = options;
         this.initialize(options);
+    }
+    setupBoardEvents() {
+        const gameUX = this;
+        const svg = this.board.svg;
+        window.onresize = function () {
+            gameUX.initialize(gameUX.options);
+        };
+        let squareDown = null;
+        let rovingPiece = null;
+        // TO DO: This is inefficient and should be replaced by proper math
+        if (svg) {
+            svg.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                const square = gameUX.getSquare(e.clientX, e.clientY);
+                if (square) {
+                    const file = Number(square.dataset.file);
+                    const rank = Number(square.dataset.rank);
+                    gameUX.updateBasedOnState(square, file, rank);
+                    if (gameUX.gameUXState === 0 /* GameUXState.WaitingUser */ &&
+                        squareDown !== square) {
+                        gameUX.updateBasedOnState(square, file, rank);
+                    }
+                    squareDown = square;
+                }
+                if (rovingPiece === null && squareDown) {
+                    const pieceElement = squareDown.querySelector('.piece');
+                    if (pieceElement) {
+                        rovingPiece = document.createElementNS(SVGNS, 'image');
+                        rovingPiece.setAttribute('width', String(pieceElement.getAttribute('width')));
+                        rovingPiece.setAttribute('height', String(pieceElement.getAttribute('height')));
+                        rovingPiece.setAttribute('href', String(pieceElement.getAttribute('href')));
+                        rovingPiece.style.visibility = "hidden";
+                        rovingPiece.style.opacity = "50%";
+                        svg.appendChild(rovingPiece);
+                    }
+                }
+            });
+            svg.addEventListener('mouseup', function (e) {
+                e.preventDefault();
+                const square = gameUX.getSquare(e.clientX, e.clientY);
+                if (square) {
+                    const file = Number(square.dataset.file);
+                    const rank = Number(square.dataset.rank);
+                    if (squareDown !== square) {
+                        gameUX.updateBasedOnState(square, file, rank);
+                        squareDown = null;
+                    }
+                }
+                rovingPiece?.remove();
+                rovingPiece = null;
+            });
+            svg.addEventListener('mousemove', function (e) {
+                e.preventDefault();
+                if (rovingPiece) {
+                    const width = Number(rovingPiece.getAttribute('width'));
+                    const height = Number(rovingPiece.getAttribute('height'));
+                    const x = e.offsetX - width / 2.0;
+                    const y = e.offsetY - height / 2.0;
+                    rovingPiece.setAttribute('x', String(x));
+                    rovingPiece.setAttribute('y', String(y));
+                    rovingPiece.style.visibility = "visible";
+                }
+            });
+        }
     }
 }

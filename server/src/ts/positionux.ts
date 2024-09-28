@@ -1,4 +1,4 @@
-import { DEFAULT_POSITION_STRING, Position, loadPosition, loadEmptyPosition, positionToString, } from "./game.js";
+import { DEFAULT_POSITION_STRING, Position, fr, ROOK, BISHOP, loadPosition, loadEmptyPosition, positionToString } from "./game.js";
 
 import { GameUX } from "./gameux.js";
 
@@ -18,6 +18,7 @@ export class PositionUX {
   position: Position;
   positionString: string;
   gameUX: GameUX;
+  action: string;
 
   constructor(divID: string, options: PositionUXOptionType = DEFAULT_OPTIONS) {
     if (options.positionString > "") {
@@ -28,8 +29,10 @@ export class PositionUX {
     this.positionString = positionToString(this.position);
     this.gameUX = new GameUX(divID, {
       startPosition: this.positionString,
+      setupEvents: false,
     });
     this.gameUX.updateBoard();
+    this.action = "cursor";
   }
 };
 
@@ -45,31 +48,128 @@ export const processForm = function(divID: string, form: HTMLFormElement) {
     ranks: ranks,
     positionString: positionString
   });
-  //   } catch (err) {
-  //     throw "Problem creating position";
-  //   }
-  // } catch (err) {
-  //   throw `Problem with form: ${err}`;
-  // }
 };
 
-export const processPositions = function() {
-  const divs = document.querySelectorAll('div.setup-position');
-  for (const div of divs) {
-    let positionUX;
-    const form: HTMLFormElement | null = div.querySelector('div.position-files-ranks form');
-    const position: HTMLDivElement | null = div.querySelector('div.position');
-    if (position) {
-      position.style.visibility = "hidden";
-    }
-    if (form && position) {
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        position.style.visibility = "visible";
-        positionUX = processForm("position-1", form);
-        form.style.display = "none";
-        console.log("A", position);
-      });
-    }
+const setupSquareActions = function(positionUX: PositionUX) {
+  if (positionUX.gameUX.board && positionUX.gameUX.board.svg) {
+    positionUX.gameUX.board.svg.addEventListener('click', function(e) {
+      e.preventDefault();
+      const squareSVG = positionUX.gameUX.getSquare(e.clientX, e.clientY);
+      if (squareSVG) {
+        const position = positionUX.gameUX.game.position;
+        const action = positionUX.action;
+        const file = Number(squareSVG.dataset.file);
+        const rank = Number(squareSVG.dataset.rank);
+        const square = position.squares[fr(position.files, file, rank)];
+        switch (action) {
+          case 'north-rook':
+            square.piece = [0, ROOK];
+            break;
+          case 'north-bishop':
+            square.piece = [0, BISHOP];
+            break;
+          case 'south-rook':
+            square.piece = [ROOK, 0];
+            break;
+          case 'south-bishop':
+            square.piece = [BISHOP, 0];
+            break;
+          case 'north-0':
+            square.points[1] = 0;
+            break;
+          case 'north-1':
+            square.points[1] = 1;
+            break;
+          case 'north-2':
+            square.points[1] = 2;
+            break;
+          case 'north-3':
+            square.points[1] = 3;
+            break;
+          case 'north-4':
+            square.points[1] = 4;
+            break;
+          case 'south-0':
+            square.points[0] = 0;
+            break;
+          case 'south-1':
+            square.points[0] = 1;
+            break;
+          case 'south-2':
+            square.points[0] = 2;
+            break;
+          case 'south-3':
+            square.points[0] = 3;
+            break;
+          case 'south-4':
+            square.points[0] = 4;
+            break;
+          case 'block':
+            square.blocked = true;
+            break;
+          case 'eraser':
+            square.piece = [0, 0];
+            square.points = [0, 0];
+            square.blocked = false;
+            break;
+        }
+        positionUX.gameUX.redrawBoard(positionUX.gameUX.squareDim);
+        positionUX.gameUX.updatePositionString();
+      }
+    });
   }
+}
+
+export const processPositions = function(elemID: string) {
+  const userElem = <HTMLElement>document.getElementById(elemID);
+  if (userElem) {
+    const divs = userElem.querySelectorAll('div.setup-position');
+    for (const div of divs) {
+      let positionUX;
+      const form: HTMLFormElement | null = div.querySelector('div.position-files-ranks form');
+      const position: HTMLDivElement | null = div.querySelector('div.position');
+      if (position) {
+        position.style.visibility = "hidden";
+      }
+      if (form && position) {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          position.style.visibility = "visible";
+          positionUX = processForm(elemID, form);
+          setupSquareActions(positionUX);
+          setupSelectorActions(positionUX, userElem);
+          positionUX.gameUX.setupPositionString();
+          form.style.display = "none";
+        });
+      }
+    }
+  } else {
+    throw `No elements ${elemID} found`;
+  }
+}
+
+
+const setupSelectorActions = function(positionUX: PositionUX, userElem: HTMLElement) {
+  const elems = userElem.querySelectorAll('div.position-elements button');
+  elems.forEach((elem) => {
+    const button = <HTMLButtonElement>elem;
+    const selected = <HTMLDivElement>userElem.querySelector('div.selected');
+    const pointer = <HTMLButtonElement>userElem.querySelector('button.cursor');
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (selected) {
+        selected.innerHTML = button.innerHTML;
+        selected.style.backgroundColor = getComputedStyle(button).getPropertyValue('background-color');
+        positionUX.action = button.dataset.action || "cursor";
+      }
+    });
+    if (selected && pointer) {
+      const event = new MouseEvent("click", {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+      });
+      pointer.dispatchEvent(event);
+    }
+  });
 }

@@ -9,6 +9,7 @@ import {
   toString,
   Game,
   GameStatus,
+  GameOverReason,
   newGameWithMoves,
   loadPosition,
   move as gameMove,
@@ -16,7 +17,6 @@ import {
   positionToString,
   Position,
 } from "./game.js";
-
 
 // Global constants
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -27,8 +27,9 @@ const ODD_SQUARE = 'SlateGray';
 const SELECTED_SQUARE = 'DarkCyan';
 const TRACER_COLOR = 'DarkSlateBlue';
 const LAST_MOVE_COLOR = 'Yellow';
-const POINTS_SOUTH = 'DarkRed';
-const POINTS_NORTH = '#145a32';
+const SELECTED_SQUARE_COLOR = '#43cb7e';
+const POINTS_SOUTH = 'White';
+const POINTS_NORTH = 'Black';
 
 const SOUTH_ROOK_IMAGE = '/images/Chess_rlt45.svg';
 const SOUTH_BISHOP_IMAGE = '/images/Chess_blt45.svg';
@@ -37,19 +38,19 @@ const NORTH_BISHOP_IMAGE = '/images/Chess_bdt45.svg';
 const BLOCKED_SQUARE_IMAGE = '/images/cross-svgrepo-com.svg';
 const FROZEN_SQUARE_IMAGE = '/images/cross-frozen.svg';
 
-const DIV_X_MARGIN = 150;
-const DIV_Y_MARGIN = 150;
+const DIV_X_MARGIN = 50;
+const DIV_Y_MARGIN = 200;
 
 // Types and enums
 
-enum GameUXState {
+export const enum GameUXState {
   WaitingUser,
   WaitingOtherPlayer,
   PieceSelected,
   GameOver,
 };
 
-type BoardType = {
+export type BoardType = {
   svg: SVGElement | null;
   squares: SVGElement[];
   northIndicator: SVGElement | null;
@@ -70,10 +71,12 @@ type InfoType = {
 
 export type GameUXOptionType = {
   startPosition: string;
+  setupEvents: boolean;
 };
 
 const DEFAULT_OPTIONS = {
   startPosition: DEFAULT_POSITION_STRING,
+  setupEvents: true,
 };
 
 export class GameUX {
@@ -123,9 +126,10 @@ export class GameUX {
     if (this.game === undefined) {
       this.game = newGameWithMoves(loadPosition(options.startPosition));
     }
-    this.setupBoard();
     this.setupGame();
-    this.setEvents();
+    if (options.setupEvents) {
+      this.setupEvents();
+    }
     this.updateAll();
   }
 
@@ -133,9 +137,18 @@ export class GameUX {
     height: number,
     files: number,
     ranks: number): number {
-    const dimWidth = (width - DIV_X_MARGIN) / files;
-    const dimHeight = (height - DIV_Y_MARGIN) / ranks;
-    return Math.min(dimWidth, dimHeight);
+    let result: number;
+    let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    if (width <= vh) {
+      result = (width - DIV_X_MARGIN) / files;
+    } else {
+      result = (height - DIV_Y_MARGIN) / ranks;
+    }
+    const maxSize = (height - DIV_Y_MARGIN) / 6;
+    if (result > maxSize) {
+      result = maxSize;
+    }
+    return result;
   }
 
   setupBlocked = function(this: GameUX, square: SVGElement) {
@@ -175,7 +188,8 @@ export class GameUX {
       } else {
         this.placePoint(svg, points[0], POINTS_SOUTH, fontSize, offset, fontSize + offset);
       }
-    } else {
+    }
+    if (points[1]) {
       if (this.board.onTop === NORTH) {
         this.placePoint(svg, points[1], POINTS_NORTH, fontSize, offset, fontSize + offset);
       } else {
@@ -186,7 +200,7 @@ export class GameUX {
 
   setupSquare = function(this: GameUX, file: number, rank: number) {
     const svg = document.createElementNS(SVGNS, 'svg');
-    const square = document.createElementNS(SVGNS, 'rect');
+    const square: SVGRectElement = document.createElementNS(SVGNS, 'rect');
     svg.appendChild(square);
     svg.id = this.divID + "-square-" + String(file) + '-' + String(rank);
     let x: number;
@@ -202,6 +216,8 @@ export class GameUX {
     svg.setAttribute('y', String(y));
     svg.setAttribute('height', String(this.squareDim));
     svg.setAttribute('width', String(this.squareDim));
+    svg.dataset.file = String(file);
+    svg.dataset.rank = String(rank);
     square.setAttribute('x', "0");
     square.setAttribute('y', "0");
     square.setAttribute('height', String(this.squareDim));
@@ -303,7 +319,7 @@ export class GameUX {
     this.board.svg!.appendChild(group);
   }
 
-  setupBoard = function(this: GameUX) {
+  setupBoard = function(this: GameUX, squareDim = 0) {
     this.board.svg = this.div.querySelector('svg');
     const div: HTMLDivElement | null = this.div.querySelector('div.board');
     if (this.board.svg && div) {
@@ -312,7 +328,7 @@ export class GameUX {
       this.board.svg.setAttribute('width', String(dim));
       this.board.svg.setAttribute('height', String(dim));
       const position = this.game.position;
-      this.squareDim = this.calcSquareDim(dim, dim, position.files, position.ranks);
+      this.squareDim = squareDim || this.calcSquareDim(dim, dim, position.files, position.ranks);
       this.board.squares = [];
       for (let rank = 0; rank < position.ranks; rank++) {
         for (let file = 0; file < position.files; file++) {
@@ -383,10 +399,10 @@ export class GameUX {
   }
 
   placePiece = function(this: GameUX, square: SVGElement, piece: [number, number]) {
-    const pieceElement = document.createElementNS(SVGNS, 'image');
     const pieceDim = this.squareDim * (3.0 / 4.0);
     const x = (this.squareDim - pieceDim) / 2.0;
     const y = x;
+    const pieceElement = document.createElementNS(SVGNS, 'image');
     pieceElement.setAttribute('x', String(x));
     pieceElement.setAttribute('y', String(y));
     pieceElement.setAttribute('width', String(pieceDim));
@@ -481,29 +497,65 @@ export class GameUX {
     }
   }
 
+  reasonText = function(reason: GameOverReason, ply: number) {
+    switch (reason) {
+      case GameOverReason.Agreement:
+        return "Draw agreed";
+      case GameOverReason.NoMoves:
+        return "No moves possible";
+      case GameOverReason.PlyWithoutPoints:
+        return `No points scored for ${ply} ply`;
+      case GameOverReason.PointsScored:
+        return "Winning points scored";
+      default:
+        return "";
+    }
+  }
+
   updateScoreboard = function(this: GameUX) {
     if (this.info.scoreboard) {
       const resultDiv = this.info.scoreboard.querySelector('div.result');
       if (resultDiv) {
         switch (this.game.position.gameStatus) {
           case GameStatus.Tie:
-            resultDiv.textContent = "Game tied";
+            resultDiv.textContent = "Game tied: " +
+              this.reasonText(this.game.position.gameOverReason,
+                this.game.position.plyTillEnd);
             break;
           case GameStatus.North:
-            resultDiv.textContent = "North wins";
+            resultDiv.textContent = "North wins: " +
+              this.reasonText(this.game.position.gameOverReason,
+                this.game.position.plyTillEnd);
+            ;
             break;
           case GameStatus.South:
-            resultDiv.textContent = "South wins";
+            resultDiv.textContent = "South wins: " +
+              this.reasonText(this.game.position.gameOverReason,
+                this.game.position.plyTillEnd);
+            ;
             break;
         }
       }
-      const southScore = this.game.position.score[SI(SOUTH)];
-      const northScore = this.game.position.score[SI(NORTH)];
-      const southToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - southScore);
-      const northToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - northScore);
-      let text = "South score: " + String(southScore) + " To win: " + String(southToWin) + "\r\n";
-      text += "North score: " + String(northScore) + " To win: " + String(northToWin) + "\r\n";
-      this.info.scoreboard.textContent = text;
+      const plyLeft = this.info.scoreboard.querySelector('div.ply-left');
+      if (plyLeft) {
+        plyLeft.textContent = "Ply till result:" +
+          (this.game.position.plyTillEnd - (this.game.position.ply - this.game.position.plyLastPoints));
+      }
+      const scoreDiv = this.info.scoreboard.querySelector('div.score');
+      if (scoreDiv) {
+        const southScore = this.game.position.score[SI(SOUTH)];
+        const northScore = this.game.position.score[SI(NORTH)];
+        const southToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - southScore);
+        const northToWin = Math.max(0, this.game.position.winScore[SI(SOUTH)] - northScore);
+        const northDiv = scoreDiv.querySelector('div.north-score');
+        if (northDiv) {
+          northDiv.textContent = "North score: " + String(northScore) + " To win: " + String(northToWin);
+        }
+        const southDiv = scoreDiv.querySelector('div.south-score');
+        if (southDiv) {
+          southDiv.textContent = "South score: " + String(southScore) + " To win: " + String(southToWin);
+        }
+      }
     }
   }
 
@@ -554,6 +606,21 @@ export class GameUX {
     return pieceMoves;
   }
 
+  setSelectedSquare = function(this: GameUX, file: number, rank: number) {
+    const square = this.board.squares[fr(this.game.position.files, file, rank)];
+    if (square) {
+      const selectedElement = document.createElementNS(SVGNS, 'rect');
+      selectedElement.setAttribute('x', '0');
+      selectedElement.setAttribute('y', '0');
+      selectedElement.setAttribute('width', String(this.squareDim));
+      selectedElement.setAttribute('height', String(this.squareDim));
+      selectedElement.setAttribute('fill', SELECTED_SQUARE_COLOR);
+      selectedElement.setAttribute('fill-opacity', '20%');
+      selectedElement.setAttribute('class', 'selected-square dynamic');
+      square.appendChild(selectedElement);
+    }
+  }
+
   setTracerOn = function(this: GameUX, file: number, rank: number) {
     const moves = this.selectPieceMoves(file, rank);
     for (const move of moves) {
@@ -578,6 +645,7 @@ export class GameUX {
   selectPiece = function(this: GameUX, square: SVGElement, file: number, rank: number) {
     square.setAttribute('fill', SELECTED_SQUARE);
     this.selectedPiece = [file, rank];
+    this.setSelectedSquare(file, rank);
     this.setTracerOn(file, rank);
   }
 
@@ -597,13 +665,14 @@ export class GameUX {
     return true;
   }
 
-  updateBasedOnState = function(this: GameUX, square: SVGElement, file: number, rank: number) {
+  updateBasedOnState = function(this: GameUX, square: SVGElement | null, file: number, rank: number) {
     switch (this.gameUXState) {
-      // Temporary measure until 2-player-mode working
       case GameUXState.WaitingOtherPlayer:
       case GameUXState.WaitingUser:
-        this.selectPiece(square, file, rank);
-        this.gameUXState = GameUXState.PieceSelected;
+        if (square) {
+          this.selectPiece(square, file, rank);
+          this.gameUXState = GameUXState.PieceSelected;
+        }
         break;
       case GameUXState.PieceSelected:
         if (this.movePiece(file, rank) === true) {
@@ -619,25 +688,104 @@ export class GameUX {
     }
   }
 
-  setEvents = function(this: GameUX) {
+  getSquare = function(this: GameUX, x: number, y: number) {
+    for (const square of this.board.squares) {
+      const rect = square.getBoundingClientRect();
+      if (rect.left <= x && rect.top <= y &&
+        rect.right >= x && rect.bottom >= y) {
+        return square;
+      }
+    }
+    return null;
+  }
+
+  setupBoardEvents(this: GameUX) {
     const gameUX = this;
+    const svg = this.board.svg;
+
     window.onresize = function() {
       gameUX.initialize(gameUX.options);
     }
-    const position = this.game.position;
-    for (let rank = 0; rank < position.ranks; rank++) {
-      for (let file = 0; file < position.files; file++) {
-        const index = fr(position.files, file, rank);
-        const square = this.board.squares[index];
-        square.addEventListener('click', function() {
+
+    let squareDown: SVGElement | null = null;
+    let rovingPiece: SVGElement | null = null;
+
+    // TO DO: This is inefficient and should be replaced by proper math
+
+    if (svg) {
+
+      svg.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        const square = gameUX.getSquare(e.clientX, e.clientY);
+        if (square) {
+          const file = Number(square.dataset.file);
+          const rank = Number(square.dataset.rank);
           gameUX.updateBasedOnState(square, file, rank);
-        });
-      }
+          if (gameUX.gameUXState === GameUXState.WaitingUser &&
+            squareDown !== square) {
+            gameUX.updateBasedOnState(square, file, rank);
+          }
+          squareDown = square;
+        }
+        if (rovingPiece === null && squareDown) {
+          const pieceElement = <SVGElement | null>squareDown.querySelector('.piece');
+          if (pieceElement) {
+            rovingPiece = document.createElementNS(SVGNS, 'image');
+            rovingPiece.setAttribute('width', String(pieceElement.getAttribute('width')));
+            rovingPiece.setAttribute('height', String(pieceElement.getAttribute('height')));
+            rovingPiece.setAttribute('href', String(pieceElement.getAttribute('href')));
+            rovingPiece.style.visibility = "hidden";
+            rovingPiece.style.opacity = "50%";
+            svg.appendChild(rovingPiece);
+          }
+        }
+      });
+
+      svg.addEventListener('mouseup', function(e) {
+        e.preventDefault();
+        const square = gameUX.getSquare(e.clientX, e.clientY);
+        if (square) {
+          const file = Number(square.dataset.file);
+          const rank = Number(square.dataset.rank);
+          if (squareDown !== square) {
+            gameUX.updateBasedOnState(square, file, rank);
+            squareDown = null;
+          }
+        }
+        rovingPiece?.remove();
+        rovingPiece = null;
+      });
+
+      svg.addEventListener('mousemove', function(e) {
+        e.preventDefault();
+        if (rovingPiece) {
+          const width = Number(rovingPiece.getAttribute('width'));
+          const height = Number(rovingPiece.getAttribute('height'));
+          const x = e.offsetX - width / 2.0;
+          const y = e.offsetY - height / 2.0;
+          rovingPiece.setAttribute('x', String(x));
+          rovingPiece.setAttribute('y', String(y));
+          rovingPiece.style.visibility = "visible";
+        }
+      });
+
     }
+  }
+
+  redrawBoard = function(this: GameUX, squareDim = 0) {
+    this.setupBoard(squareDim);
+    this.updateBoard();
+  }
+
+  setupEvents = function(this: GameUX) {
+    const gameUX = this;
+    this.setupBoardEvents();
+
     if (this.info.flip) {
-      this.info.flip!.addEventListener('click', function() {
+      this.info.flip!.addEventListener('click', function(e) {
+        e.preventDefault();
         gameUX.board.onTop = (gameUX.board.onTop === SOUTH) ? NORTH : SOUTH;
-        gameUX.initialize(gameUX.options);
+        gameUX.redrawBoard();
       });
     }
   }

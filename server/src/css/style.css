@@ -1,26 +1,69 @@
-.clock, .user-actions, .scoreboard, .position-string  {
+.clock, .user-actions, .scoreboard, .position-elements, .north-position-elements, .south-position-elements, .position-string, .both-position-elements  {
         margin-bottom: 12px;
 }
 
 .record, .scoreboard {
-        font-family: mono;
-        white-space: pre;
+        font-family: monospace;
 }
 
 .scoreboard .result {
         color: red;
+        white-space: pre;
 }
 
-.record a.north::after {
-    content: "\a";
+.record {
+        height: 30vw;
+        overflow-y: scroll;
+        border: 1px solid lightGray;
 }
 
 .record a {
+        white-space: pre;
         text-decoration: none;
         color: black;
+}
+
+.record a.north::after {
+        content: "\a";
 }
 
 .record a.south {
         padding-right: 6px;
 }
 
+.position-elements button,
+.position-elements div.selected {
+        width: 55px;
+        height: 55px;
+        padding: 4px;
+        margin-right: 4px;
+}
+
+.position-elements div.selected {
+        margin: 12px;
+        height: 70px;
+        width: 70px;
+        border: 1px solid red;
+        border-radius: 5px;
+        text-align: center;
+        display: table-cell;
+        vertical-align: middle;
+}
+
+.north-position-elements {
+        border-top: 1px solid gray;
+        padding-top: 16px;
+        margin-top: 16px;
+}
+
+.north-position-elements button {
+        background-color: gray;
+}
+
+.south-position-elements button {
+        background-color: white;
+}
+
+.both-position-elements button {
+        background-color: lightgray;
+}
