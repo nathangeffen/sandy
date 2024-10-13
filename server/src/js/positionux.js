@@ -1,9 +1,90 @@
-import { DEFAULT_POSITION_STRING, fr, ROOK, BISHOP, loadPosition, loadEmptyPosition, positionToString } from "./game.js";
+import { DEFAULT_POSITION_STRING, fr, SI, SOUTH, NORTH, ROOK, BISHOP, loadPosition, loadEmptyPosition, positionToString } from "./game.js";
 import { GameUX } from "./gameux.js";
 const DEFAULT_OPTIONS = {
     files: 9,
     ranks: 9,
     positionString: DEFAULT_POSITION_STRING,
+};
+const linkFormFieldsToPosition = function (positionUX, divID) {
+    const div = document.getElementById(divID);
+    if (!div)
+        return;
+    const positionString = div.querySelector('.position-string input');
+    if (!positionString)
+        return;
+    const position = positionUX.gameUX.game.position;
+    const sideToPlay = div.querySelector('select[name="side-to-play"]');
+    const startScoreSouth = div.querySelector('input[name="start-score-south"]');
+    const startScoreNorth = div.querySelector('input[name="start-score-north"]');
+    const winScoreSouth = div.querySelector('input[name="win-score-south"]');
+    const winScoreNorth = div.querySelector('input[name="win-score-north"]');
+    const ply = div.querySelector('input[name="ply"]');
+    const plyWhenLastPointsScored = div.querySelector('input[name="ply-last"]');
+    const plyCountWithoutPointsTillEnd = div.querySelector('input[name="ply-count"]');
+    const canMoveBackToLastMoveSquare = div.querySelector('input[name="repeat"]');
+    if (sideToPlay) {
+        sideToPlay.value = (position.side === SOUTH) ? "south" : "north";
+        sideToPlay.addEventListener('change', function () {
+            position.side = (sideToPlay.value === 'south') ? SOUTH : NORTH;
+            positionString.value = positionToString(position);
+        });
+    }
+    if (startScoreSouth) {
+        startScoreSouth.value = String(position.score[SI(SOUTH)]);
+        startScoreSouth.addEventListener('click', function () {
+            position.startScore[SI(SOUTH)] = Number(startScoreSouth.value);
+            positionString.value = positionToString(position);
+        });
+    }
+    if (startScoreNorth) {
+        startScoreNorth.value = String(position.score[SI(NORTH)]);
+        startScoreNorth.addEventListener('click', function () {
+            position.startScore[SI(NORTH)] = Number(startScoreNorth.value);
+            positionString.value = positionToString(position);
+        });
+    }
+    if (winScoreSouth) {
+        winScoreSouth.value = String(position.winScore[SI(SOUTH)]);
+        winScoreSouth.addEventListener('click', function () {
+            position.winScore[SI(SOUTH)] = Number(winScoreSouth.value);
+            positionString.value = positionToString(position);
+        });
+    }
+    if (winScoreNorth) {
+        winScoreNorth.value = String(position.winScore[SI(NORTH)]);
+        winScoreNorth.addEventListener('click', function () {
+            position.winScore[SI(NORTH)] = Number(winScoreNorth.value);
+            positionString.value = positionToString(position);
+        });
+    }
+    if (ply) {
+        ply.value = String(position.ply);
+        ply.addEventListener('change', function () {
+            position.ply = Number(ply.value);
+            positionString.value = positionToString(position);
+        });
+    }
+    if (plyWhenLastPointsScored) {
+        plyWhenLastPointsScored.value = String(position.plyLastPoints);
+        plyWhenLastPointsScored.addEventListener('change', function () {
+            position.plyLastPoints = Number(plyWhenLastPointsScored.value);
+            positionString.value = positionToString(position);
+        });
+    }
+    if (plyCountWithoutPointsTillEnd) {
+        plyCountWithoutPointsTillEnd.value = String(position.plyTillEnd);
+        plyCountWithoutPointsTillEnd.addEventListener('change', function () {
+            position.plyTillEnd = Number(plyCountWithoutPointsTillEnd.value);
+            positionString.value = positionToString(position);
+        });
+    }
+    if (canMoveBackToLastMoveSquare) {
+        canMoveBackToLastMoveSquare.checked = position.repeatLastMove;
+        canMoveBackToLastMoveSquare.addEventListener('change', function () {
+            position.repeatLastMove = canMoveBackToLastMoveSquare.checked;
+            positionString.value = positionToString(position);
+        });
+    }
 };
 export class PositionUX {
     constructor(divID, options = DEFAULT_OPTIONS) {
@@ -19,6 +100,7 @@ export class PositionUX {
             setupEvents: false,
         });
         this.gameUX.updateBoard();
+        linkFormFieldsToPosition(this, divID);
         this.action = "cursor";
     }
 }
@@ -105,34 +187,6 @@ const setupSquareActions = function (positionUX) {
         });
     }
 };
-export const processPositions = function (elemID) {
-    const userElem = document.getElementById(elemID);
-    if (userElem) {
-        const divs = userElem.querySelectorAll('div.setup-position');
-        for (const div of divs) {
-            let positionUX;
-            const form = div.querySelector('div.position-files-ranks form');
-            const position = div.querySelector('div.position');
-            if (position) {
-                position.style.visibility = "hidden";
-            }
-            if (form && position) {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    position.style.visibility = "visible";
-                    positionUX = processForm(elemID, form);
-                    setupSquareActions(positionUX);
-                    setupSelectorActions(positionUX, userElem);
-                    positionUX.gameUX.setupPositionString();
-                    form.style.display = "none";
-                });
-            }
-        }
-    }
-    else {
-        throw `No elements ${elemID} found`;
-    }
-};
 const setupSelectorActions = function (positionUX, userElem) {
     const elems = userElem.querySelectorAll('div.position-elements button');
     elems.forEach((elem) => {
@@ -156,4 +210,31 @@ const setupSelectorActions = function (positionUX, userElem) {
             pointer.dispatchEvent(event);
         }
     });
+};
+export const processPositions = function (elemID) {
+    const userElem = document.getElementById(elemID);
+    if (userElem) {
+        const divs = userElem.querySelectorAll('div.setup-position');
+        for (const div of divs) {
+            let positionUX;
+            const form = div.querySelector('div.position-files-ranks form');
+            const position = div.querySelector('div.position');
+            if (position) {
+                position.style.visibility = "hidden";
+            }
+            if (form && position) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    position.style.visibility = "visible";
+                    positionUX = processForm(elemID, form);
+                    setupSquareActions(positionUX);
+                    setupSelectorActions(positionUX, userElem);
+                    form.style.display = "none";
+                });
+            }
+        }
+    }
+    else {
+        throw `No elements ${elemID} found`;
+    }
 };

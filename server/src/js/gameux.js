@@ -43,6 +43,7 @@ export class GameUX {
             scoreboard: null,
             positionString: null,
             record: null,
+            message: null,
         };
         this.initialize = function (options) {
             this.divWidth = this.div.offsetWidth;
@@ -246,30 +247,46 @@ export class GameUX {
         this.setupScoreboard = function () {
             this.info.scoreboard = this.info.div?.querySelector('.scoreboard') || null;
         };
+        this.counter = 0;
         this.setupPositionString = function () {
             this.info.positionString = this.info.div?.querySelector('.position-string input') || null;
             const copy = this.info.div?.querySelector('.position-string .copy');
+            const save = this.info.div?.querySelector('.position-string .save');
             const positionString = this.info.positionString;
+            const gameUX = this;
             if (positionString && copy) {
                 copy.addEventListener('click', function (e) {
                     e.preventDefault();
                     navigator.clipboard.writeText(positionString.value);
+                    gameUX.setMessage('Copied!', 1000);
+                });
+            }
+            if (positionString && save) {
+                save.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    fetch("/saveposition", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            positionString: positionString.value,
+                        }),
+                        headers: {
+                            "Content-type": "application/json; charset=UTF-8"
+                        }
+                    })
+                        .then((response) => response.json())
+                        .then((json) => {
+                        gameUX.setMessage(json['message']);
+                    });
                 });
             }
         };
         this.setupRecord = function () {
             this.info.record = this.info.div?.querySelector('.record') || null;
         };
+        this.setupMessage = function () {
+            this.info.message = this.info.div?.querySelector('.message') || null;
+        };
         this.setupInfo = function () {
-            // Result if this.game over
-            // Clock
-            // To play
-            // To play: South
-            // Points: South: 9/18 (3 more to win) North 9
-            // Draw offer
-            // Resign
-            // Move history
-            //
             this.info.div = this.div.querySelector('.info');
             if (this.info.div) {
                 this.setupClock();
@@ -277,6 +294,7 @@ export class GameUX {
                 this.setupScoreboard();
                 this.setupPositionString();
                 this.setupRecord();
+                this.setupMessage();
             }
         };
         this.setupGame = function () {
@@ -465,11 +483,27 @@ export class GameUX {
                 });
             }
         };
+        this.clearMessage = function () {
+            if (this.info.message) {
+                this.info.message.textContent = "";
+            }
+        };
         this.updateAll = function () {
             this.updateBoard();
             this.updateScoreboard();
             this.updatePositionString();
             this.updateRecord();
+            this.clearMessage();
+        };
+        this.setMessage = function (msg, seconds = 0) {
+            if (this.info.message) {
+                this.info.message.textContent = msg;
+                if (seconds) {
+                    setTimeout(() => {
+                        this.clearMessage();
+                    }, seconds);
+                }
+            }
         };
         this.selectPieceMoves = function (file, rank) {
             const pieceMoves = [];

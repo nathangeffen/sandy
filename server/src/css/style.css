@@ -1,5 +1,5 @@
 .clock, .user-actions, .scoreboard, .position-elements, .north-position-elements, .south-position-elements, .position-string, .both-position-elements  {
-        margin-bottom: 12px;
+        margin-bottom: 9px;
 }
 
 .record, .scoreboard {
@@ -31,7 +31,15 @@
         padding-right: 6px;
 }
 
-.position-elements button,
+.position-string div {
+        margin-top: 9px;
+        margin-bottom: 9px;
+}
+
+.position-string button {
+        width: 100px;
+}
+
 .position-elements div.selected {
         width: 55px;
         height: 55px;
@@ -41,8 +49,8 @@
 
 .position-elements div.selected {
         margin: 12px;
-        height: 70px;
-        width: 70px;
+        height: 50px;
+        width: 50px;
         border: 1px solid red;
         border-radius: 5px;
         text-align: center;
@@ -52,8 +60,12 @@
 
 .north-position-elements {
         border-top: 1px solid gray;
-        padding-top: 16px;
-        margin-top: 16px;
+        padding-top: 6px;
+        margin-top: 6px;
+}
+.position-elements button {
+        height: 40px;
+        width: 40px;
 }
 
 .north-position-elements button {
@@ -66,4 +78,28 @@
 
 .both-position-elements button {
         background-color: lightgray;
+}
+
+.position-context {
+        font-size: small;
+}
+
+.position-context div.form-group {
+        margin-top: 3px;
+        margin-bottom: 3px;
+}
+
+.position-context input, .position-context select {
+        height: 19px;
+        width: 60px;
+        font-size: small;
+}
+
+.position-context input[type='checkbox'] {
+        height: 12px;
+        width: 12px;
+}
+
+.message {
+        color: red;
 }

@@ -18,6 +18,7 @@ import {
   Position,
 } from "./game.js";
 
+
 // Global constants
 const SVGNS = "http://www.w3.org/2000/svg";
 
@@ -67,6 +68,7 @@ type InfoType = {
   scoreboard: HTMLElement | null;
   positionString: HTMLInputElement | null;
   record: HTMLElement | null;
+  message: HTMLElement | null;
 };
 
 export type GameUXOptionType = {
@@ -106,6 +108,7 @@ export class GameUX {
     scoreboard: null,
     positionString: null,
     record: null,
+    message: null,
   };
 
   constructor(divID: string,
@@ -357,14 +360,36 @@ export class GameUX {
     this.info.scoreboard = this.info.div?.querySelector('.scoreboard') || null;
   }
 
+  counter = 0;
   setupPositionString = function(this: GameUX) {
     this.info.positionString = this.info.div?.querySelector('.position-string input') || null;
     const copy = this.info.div?.querySelector('.position-string .copy');
+    const save = this.info.div?.querySelector('.position-string .save');
     const positionString: HTMLInputElement | null = this.info.positionString;
+    const gameUX = this;
     if (positionString && copy) {
       copy.addEventListener('click', function(e) {
         e.preventDefault();
         navigator.clipboard.writeText(positionString.value);
+        gameUX.setMessage('Copied!', 1000);
+      });
+    }
+    if (positionString && save) {
+      save.addEventListener('click', function(e) {
+        e.preventDefault();
+        fetch("/saveposition", {
+          method: "POST",
+          body: JSON.stringify({
+            positionString: positionString.value,
+          }),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8"
+          }
+        })
+          .then((response) => response.json())
+          .then((json) => {
+            gameUX.setMessage(json['message']);
+          });
       });
     }
   }
@@ -373,16 +398,11 @@ export class GameUX {
     this.info.record = this.info.div?.querySelector('.record') || null;
   }
 
+  setupMessage = function(this: GameUX) {
+    this.info.message = this.info.div?.querySelector('.message') || null;
+  }
+
   setupInfo = function(this: GameUX) {
-    // Result if this.game over
-    // Clock
-    // To play
-    // To play: South
-    // Points: South: 9/18 (3 more to win) North 9
-    // Draw offer
-    // Resign
-    // Move history
-    //
     this.info.div = this.div.querySelector('.info');
     if (this.info.div) {
       this.setupClock();
@@ -390,6 +410,7 @@ export class GameUX {
       this.setupScoreboard();
       this.setupPositionString();
       this.setupRecord();
+      this.setupMessage();
     }
   }
 
@@ -589,11 +610,29 @@ export class GameUX {
     }
   }
 
+  clearMessage = function(this: GameUX) {
+    if (this.info.message) {
+      this.info.message.textContent = "";
+    }
+  }
+
   updateAll = function(this: GameUX) {
     this.updateBoard();
     this.updateScoreboard();
     this.updatePositionString();
     this.updateRecord();
+    this.clearMessage();
+  }
+
+  setMessage = function(this: GameUX, msg: string, seconds: number = 0) {
+    if (this.info.message) {
+      this.info.message.textContent = msg;
+      if (seconds) {
+        setTimeout(() => {
+          this.clearMessage();
+        }, seconds);
+      }
+    }
   }
 
   selectPieceMoves = function(this: GameUX, file: number, rank: number) {
