@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Create a position</h1>
+<div id="position-1" class="game">
+        <div class="setup-position">
+                {% include "position-setup.html" %}
+        </div>
+</div>
+
+{% endblock %}
+
+{% block footerscripts %}
+<script type="module" src="js/positionux.js"></script>
+<script type="module">
+        import {processPositions} from "/js/positionux.js";
+        processPositions("position-1");
+</script>
+{% endblock %}

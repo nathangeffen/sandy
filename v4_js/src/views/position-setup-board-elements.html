@@ -1,0 +1,134 @@
+<div class="north-position-elements">
+    <button data-action="north-rook">
+        <img src="images/Chess_rdt45.svg" width="35" height="35" alt="North Rook" />
+    </button>
+    <button data-action="north-bishop">
+        <img src="images/Chess_bdt45.svg" width="35" height="35" alt="North Bishop" />
+    </button>
+    <button data-action="north-0">
+        0
+    </button>
+    <button data-action="north-1">
+        1
+    </button>
+    <button data-action="north-2">
+        2
+    </button>
+    <button data-action="north-3">
+        3
+    </button>
+    <button data-action="north-4">
+        4
+    </button>
+</div>
+<div class="south-position-elements">
+    <button data-action="south-rook">
+        <img src="images/Chess_rlt45.svg" width="35" height="35" alt="South Rook" />
+    </button>
+    <button data-action="south-bishop">
+        <img src="images/Chess_blt45.svg" width="35" height="35" alt="South Bishop" />
+    </button>
+    <button data-action="south-0">
+        0
+    </button>
+    <button data-action="south-1">
+        1
+    </button>
+    <button data-action="south-2">
+        2
+    </button>
+    <button data-action="south-3">
+        3
+    </button>
+    <button data-action="south-4">
+        4
+    </button>
+</div>
+<div class="both-position-elements">
+    <button data-action="eraser">
+        <img src="images/Toicon-icon-isometric-erase.svg" width="35" height="35" alt="Eraser" />
+    </button>
+    <button data-action="block">
+        <img src="images/cross-svgrepo-com.svg" width="35" height="35" alt="Block" />
+    </button>
+    <button class="cursor" data-action="cursor">
+        <img src="images/Cursor.svg" width="35" height="35" alt="Select" />
+    </button>
+</div>
+</div>
+<div class="position-context col-sm-6">
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="side-to-play">Side to
+            play</label>
+        <div class="col-sm-5">
+            <select required class="form-select-xs" name="side-to-play">
+                <option value="south">South</option>
+                <option value="south">North</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="start-score-south">
+            Start score for south
+        </label>
+        <div class="col-sm-5">
+            <input required class="form-control-xs" type="number" min="0" max="100" step="1" name="start-score-south">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="start-score-north">
+            Start score for north
+        </label>
+        <div class="col-sm-5">
+            <input class="form-control-xs" type="number" min="0" max="100" step="1" name="start-score-north">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="win-score-south">
+            Win score for south
+        </label>
+        <div class="col-sm-5">
+            <input required class="form-control-xs" type="number" min="0" max="100" step="1" name="win-score-south">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="win-score-north">
+            Win score for north
+        </label>
+        <div class="col-sm-5">
+            <input required class="form-control-xs" type="number" min="0" max="100" step="1" name="win-score-north">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="ply">
+            Start ply
+        </label>
+        <div class="col-sm-5">
+            <input required class="form-control-xs" type="number" min="0" max="999" step="1" name="ply">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="ply-last">
+            Ply when last points scored
+        </label>
+        <div class="col-sm-5">
+            <input required class="form-control-xs" type="number" min="0" max="999" step="1" name="ply-last">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="ply-count">
+            Ply count without points scored until draw
+        </label>
+        <div class="col-sm-5">
+            <input required class="form-control-xs" type="number" min="0" max="999" step="1" name="ply-count">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-7 col-form-label-xs" for="repeat">
+            Piece may move back to square it was on last move
+        </label>
+        <div class="col-sm-5">
+            <input class="form-control-xs" type="checkbox" name="repeat">
+        </div>
+    </div>
+</div>

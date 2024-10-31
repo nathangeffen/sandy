@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div id="game-1" class="game"></div>
+{% endblock %}
+
+{% block footerscripts %}
+
+{{block.super}}
+<script type="module" src="js/gameux.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+    const socket = io();
+</script>
+
+<script type="module">
+    import {GameUX} from "/js/gameux.js";
+    new GameUX('game-1');
+</script>
+{% endblock %}

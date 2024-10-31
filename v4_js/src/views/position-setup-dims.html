@@ -1,0 +1,44 @@
+<form>
+    <div class="mb-3">
+        <label class="form-label" for="files">Files</label>
+        <div class="col-sm-3">
+            <input class="form-control" type="number" name="files" min="1" max="100" step="1" value="9">
+        </div>
+        <label class="form-label" for="ranks">Ranks</label>
+        <div class="col-sm-3">
+            <input class="form-control" type="number" name="ranks" min="1" max="100" step="1" value="9">
+        </div>
+        <div class="col-sm-9">
+            <label class="form-label" for="position-string">Or enter a
+                position
+                string</label>
+            <input class="form-control" type="text" name="position-string">
+            <button class='btn btn-secondary select-position-button'>Select
+                a saved
+                position</button>
+        </div>
+    </div>
+    <div class="mb-3">
+        <input type="submit" value="Create board" class="btn btn-primary" />
+    </div>
+</form>
+<dialog class="select-position-dialog">
+    <form>
+        <p>
+            <label>
+                Favorite animal:
+                <select>
+                    <option value="default">Choose…
+                    </option>
+                    <option>Brine shrimp</option>
+                    <option>Red panda</option>
+                    <option>Spider monkey</option>
+                </select>
+            </label>
+        </p>
+        <div>
+            <button value="cancel" formmethod="dialog">Cancel</button>
+            <button class="confirm" value="default">Select</button>
+        </div>
+    </form>
+</dialog>
