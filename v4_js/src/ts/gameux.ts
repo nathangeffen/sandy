@@ -6,7 +6,30 @@ import {
   loadPosition,
 } from "./game.js";
 
-export const SVGNS = "http://www.w3.org/2000/svg";
+
+// Global constants
+
+// COLORS
+export const POINTS_SOUTH = 'White';
+export const POINTS_NORTH = 'Black';
+
+export const SOUTH_ROOK_IMAGE = '/images/Chess_rlt45.svg';
+export const SOUTH_BISHOP_IMAGE = '/images/Chess_blt45.svg';
+export const NORTH_ROOK_IMAGE = '/images/Chess_rdt45.svg';
+export const NORTH_BISHOP_IMAGE = '/images/Chess_bdt45.svg';
+export const BLOCKED_SQUARE_IMAGE = '/images/cross-svgrepo-com.svg';
+export const FROZEN_SQUARE_IMAGE = '/images/cross-frozen.svg';
+
+export const DIV_X_MARGIN = 50;
+export const DIV_Y_MARGIN = 200;
+
+// Types and enums
+
+export type ComponentEntry = {
+  name: string,
+  tagName: string,
+  typeName: any
+};
 
 export const enum GameUXState {
   WaitingUser,
@@ -34,6 +57,8 @@ export class GameUX {
   options: GameUXOptionType;
   selectedPiece: [number, number] | null = null;
   onTop: number;
+  components: { [key: string]: any } = {};
+  gameUXState: GameUXState = GameUXState.WaitingUser;
 
   constructor(div: HTMLDivElement, options: GameUXOptionType = DEFAULT_OPTIONS) {
     this.div = div;
@@ -46,10 +71,26 @@ export class GameUX {
 
   get = function(this: GameUX, className: string, tagName: string = ""): Element | null {
     const elem = this.div.querySelector(`.${className}`);
-    console.log("A", elem?.tagName);
     if (elem && tagName && elem.tagName.toLowerCase() !== tagName.toLowerCase()) {
       return null;
     }
     return elem;
   }
+
+  addComponent(this: GameUX, component: ComponentEntry) {
+    const elem = this.get(component.name, component.tagName);
+    if (!elem) return;
+    if (component.tagName &&
+      component.tagName.toLowerCase() !== component.tagName.toLowerCase()) return;
+    this.components[component.name] = new component.typeName(this, elem);
+  }
+
+  update = function(this: GameUX) {
+    for (const component of Object.values(this.components)) {
+      if (typeof component.update === "function") {
+        component.update();
+      }
+    }
+  }
 }
+

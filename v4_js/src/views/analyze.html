@@ -20,8 +20,8 @@
 </script>
 
 <script type="module">
-    import {GameUX} from "/js/gameux.js";
-    new GameUX('game-1', {
+    import {createGameUX} from "/js/ux.js";
+    createGameUX('game-1', {
         startPosition: "{{startPosition}}",
         setupEvents: {{setupEvents}}
     });
