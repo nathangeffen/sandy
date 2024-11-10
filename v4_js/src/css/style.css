@@ -1,4 +1,4 @@
-.clock, .user-actions, .scoreboard, .position-elements, .north-position-elements, .south-position-elements, .position-string, .both-position-elements  {
+.clock, .user-actions, .scoreboard, .position-elements, .north-position-elements, .south-position-elements, .specification, .both-position-elements  {
         margin-bottom: 9px;
 }
 
@@ -33,12 +33,12 @@
         padding-right: 6px;
 }
 
-.position-string div {
+.specification div {
         margin-top: 9px;
         margin-bottom: 9px;
 }
 
-.position-string button {
+.specification button {
         width: 100px;
 }
 

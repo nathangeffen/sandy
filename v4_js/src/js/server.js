@@ -43,12 +43,14 @@ app.get('/analyze/:startPosition', (req, res) => {
         setupEvents: true
     });
 });
-app.get('/analyze', (req, res) => {
-    console.log("start analyze standard:", req.params);
+app.get('/analyze', (_, res) => {
     res.render('analyze.html', {
         title: 'Analyze',
         startPosition: DEFAULT_POSITION_STRING,
-        setupEvents: true
+        setupEvents: true,
+        flip: true,
+        draw: false,
+        resign: false,
     });
 });
 app.get('/position', (_, res) => {

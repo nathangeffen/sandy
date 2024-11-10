@@ -1,14 +1,14 @@
 import {
-  SOUTH, NORTH
+  positionToString
 } from "../game.js";
 
 import {
   GameUX
 } from "../gameux.js";
 
-import {
-  Board
-} from "./board.js";
+// import {
+//   Board
+// } from "./board.js";
 
 export class Specification {
   gameUX: GameUX;
@@ -19,11 +19,9 @@ export class Specification {
     this.input = button;
   }
 
-  addEvents(this: Specification) {
-    const gameUX = this.gameUX;
-    this.input.addEventListener('change', function(e) {
-      e.preventDefault();
-    });
+  update(this: Specification) {
+    console.log("Updating specification");
+    this.input.value = positionToString(this.gameUX.game.position);
   }
 }
 
