@@ -33,13 +33,18 @@
         padding-right: 6px;
 }
 
-.specification div {
+.specification-div {
         margin-top: 9px;
         margin-bottom: 9px;
 }
 
-.specification button {
+.specification-div button, .specification-div a {
         width: 100px;
+        margin-bottom: 20px;
+}
+
+.specification {
+        width: 300px;
 }
 
 .position-elements div.selected {
@@ -65,7 +70,7 @@
         padding-top: 6px;
         margin-top: 6px;
 }
-.position-elements button {
+.setup-board-buttons button {
         height: 40px;
         width: 40px;
 }

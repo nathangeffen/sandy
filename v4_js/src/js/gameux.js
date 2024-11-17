@@ -14,13 +14,12 @@ export const DIV_Y_MARGIN = 200;
 ;
 const DEFAULT_OPTIONS = {
     startPosition: DEFAULT_POSITION_STRING,
-    setupEvents: true,
 };
 export class GameUX {
     constructor(div, options = DEFAULT_OPTIONS) {
         this.selectedPiece = null;
         this.components = {};
-        this.gameUXState = 0 /* GameUXState.WaitingUser */;
+        this.gameUXState = 1 /* GameUXState.WaitingUser */;
         this.get = function (className, tagName = "") {
             const elem = this.div.querySelector(`.${className}`);
             if (elem && tagName && elem.tagName.toLowerCase() !== tagName.toLowerCase()) {
@@ -39,6 +38,10 @@ export class GameUX {
         this.divWidth = this.div.offsetWidth;
         this.divHeight = this.div.offsetHeight;
         this.onTop = NORTH;
+        this.options = options;
+        this.game = newGameWithMoves(loadPosition(options.startPosition));
+    }
+    setGame(options) {
         this.options = options;
         this.game = newGameWithMoves(loadPosition(options.startPosition));
     }

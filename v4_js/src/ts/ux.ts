@@ -36,6 +36,22 @@ import {
   Copy
 } from "./components/copy.js";
 
+import {
+  PositionSetup
+} from "./components/positionsetup.js";
+
+import {
+  PositionForm
+} from "./components/positionform.js";
+
+import {
+  Save
+} from "./components/save.js";
+
+import {
+  Analyze
+} from "./components/analyze.js";
+
 const componentSpecs: ComponentEntry[] = [
   {
     name: 'message',
@@ -51,11 +67,6 @@ const componentSpecs: ComponentEntry[] = [
     name: 'flip',
     tagName: 'button',
     typeName: Flip
-  },
-  {
-    name: 'specification',
-    tagName: 'input',
-    typeName: Specification
   },
   {
     name: 'result',
@@ -76,6 +87,31 @@ const componentSpecs: ComponentEntry[] = [
     name: 'copy',
     tagName: 'button',
     typeName: Copy
+  },
+  {
+    name: 'positionSetup',
+    tagName: 'div',
+    typeName: PositionSetup
+  },
+  {
+    name: 'positionForm',
+    tagName: 'form',
+    typeName: PositionForm
+  },
+  {
+    name: 'specification',
+    tagName: 'input',
+    typeName: Specification
+  },
+  {
+    name: 'save',
+    tagName: 'button',
+    typeName: Save
+  },
+  {
+    name: 'analyze',
+    tagName: 'a',
+    typeName: Analyze
   }
 ];
 

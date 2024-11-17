@@ -259,44 +259,44 @@
 // }
 //
 //
-// export const processPositions = function(elemID: string) {
-//
-//   const userElem = <HTMLElement>document.getElementById(elemID);
-//   if (!userElem) {
-//     return;
-//   }
-//   const divs = userElem.querySelectorAll('div.setup-position');
-//   for (const div of divs) {
-//     let positionUX;
-//     const form: HTMLFormElement | null = div.querySelector('div.position-files-ranks form');
-//     const position: HTMLDivElement | null = div.querySelector('div.position');
-//     if (position) {
-//       position.style.visibility = "hidden";
-//     }
-//     if (form === null || position === null) continue;
-//
-//     form.addEventListener('submit', function(e) {
-//       e.preventDefault();
-//       position.style.visibility = "visible";
-//       positionUX = processForm(elemID, form);
-//       setupSquareActions(positionUX);
-//       setupSelectorActions(positionUX, userElem);
-//       setupUsePositionButton(positionUX, userElem, 'play');
-//       setupUsePositionButton(positionUX, userElem, 'analyze');
-//       form.style.display = "none";
-//     });
-//
-//     const dialog: HTMLDialogElement | null = div.querySelector('dialog.select-position-dialog');
-//     const button = div.querySelector('button.select-position-button');
-//     if (dialog === null || button === null) continue;
-//     button.addEventListener('click', (e) => {
-//       e.preventDefault();
-//       dialog.showModal();
-//     });
-//     dialog.addEventListener('open', () => {
-//
-//     });
-//   }
-// }
+export const processPositions = function(elemID: string) {
+
+  const userElem = <HTMLElement>document.getElementById(elemID);
+  if (!userElem) return;
+
+  const divs = userElem.querySelectorAll('div.setup-position');
+
+  for (const div of divs) {
+    let positionUX;
+    const form: HTMLFormElement | null = div.querySelector('div.position-files-ranks form');
+    const position: HTMLDivElement | null = div.querySelector('div.position');
+    if (position) {
+      position.style.visibility = "hidden";
+    }
+    if (form === null || position === null) continue;
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      position.style.visibility = "visible";
+      // positionUX = processForm(elemID, form);
+      // setupSquareActions(positionUX);
+      // setupSelectorActions(positionUX, userElem);
+      // setupUsePositionButton(positionUX, userElem, 'play');
+      // setupUsePositionButton(positionUX, userElem, 'analyze');
+      form.style.display = "none";
+    });
+
+    const dialog: HTMLDialogElement | null = div.querySelector('dialog.select-position-dialog');
+    const button = div.querySelector('button.select-position-button');
+    if (dialog === null || button === null) continue;
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      dialog.showModal();
+    });
+    dialog.addEventListener('open', () => {
+
+    });
+  }
+}
 //
 //

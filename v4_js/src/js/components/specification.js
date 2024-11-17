@@ -3,12 +3,11 @@ import { positionToString } from "../game.js";
 //   Board
 // } from "./board.js";
 export class Specification {
-    constructor(gameUX, button) {
+    constructor(gameUX, input) {
         this.gameUX = gameUX;
-        this.input = button;
+        this.input = input;
     }
     update() {
-        console.log("Updating specification");
         this.input.value = positionToString(this.gameUX.game.position);
     }
 }

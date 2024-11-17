@@ -12,15 +12,14 @@ import {
 
 export class Specification {
   gameUX: GameUX;
-  input: HTMLButtonElement;
+  input: HTMLInputElement;
 
-  constructor(gameUX: GameUX, button: HTMLButtonElement) {
+  constructor(gameUX: GameUX, input: HTMLInputElement) {
     this.gameUX = gameUX;
-    this.input = button;
+    this.input = input;
   }
 
   update(this: Specification) {
-    console.log("Updating specification");
     this.input.value = positionToString(this.gameUX.game.position);
   }
 }

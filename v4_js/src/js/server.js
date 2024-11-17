@@ -19,8 +19,6 @@ if (__dirname.endsWith('/js')) {
     __dirname = join(__dirname, '..');
 }
 ;
-// app.set('views', join(__dirname, 'views'));
-// app.set('view engine', 'pug');
 app.use(express.json());
 nunjucks.configure(join(__dirname, 'views'), {
     autoescape: true,
@@ -35,18 +33,11 @@ app.get('/findopponent', (_, res) => {
 app.get('/play', (_, res) => {
     res.render('play.html', { title: 'Play' });
 });
-app.get('/analyze/:startPosition', (req, res) => {
-    console.log("start analyze custom:", req.params);
+app.get('/analyze', (req, res) => {
+    console.log("query position", req.query.position);
     res.render('analyze.html', {
         title: 'Analyze',
-        startPosition: req.params.startPosition,
-        setupEvents: true
-    });
-});
-app.get('/analyze', (_, res) => {
-    res.render('analyze.html', {
-        title: 'Analyze',
-        startPosition: DEFAULT_POSITION_STRING,
+        startPosition: (req.query.position) ? req.query.position : DEFAULT_POSITION_STRING,
         setupEvents: true,
         flip: true,
         draw: false,
@@ -55,30 +46,49 @@ app.get('/analyze', (_, res) => {
 });
 app.get('/position', (_, res) => {
     let positionSpecifications = [];
-    db.each("SELECT name FROM position", (_, row) => {
-        positionSpecifications.push(row.name);
-    });
     res.render('position.html', {
         title: 'Setup a position',
         positionSpecifications: positionSpecifications
     });
 });
+app.get('/loadpositions', (_, res) => {
+    let positionSpecifications = [];
+    db.each("SELECT name, specification FROM position", (_, row) => {
+        positionSpecifications.push(row);
+    }, () => {
+        res.json(positionSpecifications);
+    });
+});
 app.post('/saveposition', (req, res) => {
-    const positionString = req.body;
-    const UNIQUE_CONSTRAINT_FAILED = 19;
-    let message = "Position saved!";
+    const specification = req.body['specification'];
+    const hashSpecification = function () {
+        let hashAddress = 0;
+        for (let counter = 0; counter < specification.length; counter++) {
+            hashAddress = specification.charCodeAt(specification[counter]) +
+                (hashAddress << 6) + (hashAddress << 16) - hashAddress;
+        }
+        return hashAddress;
+    };
+    const generateUniqueName = function () {
+        const millisecondsSince20241117 = Number(new Date()) - 1731801600000;
+        const hash = hashSpecification();
+        return `${millisecondsSince20241117}-${hash}`;
+    };
+    const uniqueName = generateUniqueName();
     const handleResultFromDatabaseAfterSavePosition = function (error) {
+        let message = `Position saved: ${uniqueName}`;
+        const UNIQUE_CONSTRAINT_FAILED = 19;
         if (error) {
             if (error.errno === UNIQUE_CONSTRAINT_FAILED) {
                 message = "You have already saved this position.";
             }
             else {
-                message = "Failed to save position: " + String(error);
+                message = `Failed to save position: ${String(error)}`;
             }
         }
         res.json({ 'message': message });
     };
-    db.run("INSERT INTO position(position_string) VALUES(?)", [positionString['positionString']], handleResultFromDatabaseAfterSavePosition);
+    db.run("INSERT INTO position(name, specification) VALUES(?,?)", [uniqueName, specification], handleResultFromDatabaseAfterSavePosition);
 });
 app.get('/getposition', (req, res) => {
 });

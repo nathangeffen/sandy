@@ -268,6 +268,7 @@ export class Board {
             frozen.setAttribute('stroke', "Red");
         };
         this.update = function () {
+            console.log("Updating board");
             const position = this.gameUX.game.position;
             this.updateSideIndicators();
             for (let rank = 0; rank < position.ranks; rank++) {
@@ -379,23 +380,27 @@ export class Board {
         this.updateBasedOnState = function (square, file, rank) {
             const gameUX = this.gameUX;
             switch (gameUX.gameUXState) {
-                case 1 /* GameUXState.WaitingOtherPlayer */:
-                case 0 /* GameUXState.WaitingUser */:
+                case 0 /* GameUXState.SettingUp */:
+                    gameUX.components['positionSetup']?.setSquare(file, rank);
+                    this.redraw();
+                    break;
+                case 2 /* GameUXState.WaitingOtherPlayer */:
+                case 1 /* GameUXState.WaitingUser */:
                     if (square) {
                         this.selectPiece(square, file, rank);
-                        gameUX.gameUXState = 2 /* GameUXState.PieceSelected */;
+                        gameUX.gameUXState = 3 /* GameUXState.PieceSelected */;
                     }
                     break;
-                case 2 /* GameUXState.PieceSelected */:
+                case 3 /* GameUXState.PieceSelected */:
                     if (this.movePiece(file, rank) === true) {
-                        gameUX.gameUXState = 1 /* GameUXState.WaitingOtherPlayer */;
+                        gameUX.gameUXState = 2 /* GameUXState.WaitingOtherPlayer */;
                     }
                     else {
-                        gameUX.gameUXState = 0 /* GameUXState.WaitingUser */;
+                        gameUX.gameUXState = 1 /* GameUXState.WaitingUser */;
                     }
                     gameUX.update();
                     break;
-                case 3 /* GameUXState.GameOver */:
+                case 4 /* GameUXState.GameOver */:
                 default:
                     break;
             }
@@ -417,7 +422,7 @@ export class Board {
                 const file = Number(square.dataset.file);
                 const rank = Number(square.dataset.rank);
                 board.updateBasedOnState(square, file, rank);
-                if (gameUX.gameUXState === 0 /* GameUXState.WaitingUser */ &&
+                if (gameUX.gameUXState === 1 /* GameUXState.WaitingUser */ &&
                     squareDown !== square) {
                     board.updateBasedOnState(square, file, rank);
                 }

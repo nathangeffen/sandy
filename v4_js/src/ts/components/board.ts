@@ -309,6 +309,7 @@ export class Board {
   }
 
   update = function(this: Board) {
+    console.log("Updating board");
     const position = this.gameUX.game.position;
 
     this.updateSideIndicators();
@@ -495,6 +496,10 @@ export class Board {
   updateBasedOnState = function(this: Board, square: SVGElement | null, file: number, rank: number) {
     const gameUX = this.gameUX;
     switch (gameUX.gameUXState) {
+      case GameUXState.SettingUp:
+        gameUX.components['positionSetup']?.setSquare(file, rank);
+        this.redraw();
+        break;
       case GameUXState.WaitingOtherPlayer:
       case GameUXState.WaitingUser:
         if (square) {

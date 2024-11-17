@@ -32,6 +32,7 @@ export type ComponentEntry = {
 };
 
 export const enum GameUXState {
+  SettingUp,
   WaitingUser,
   WaitingOtherPlayer,
   PieceSelected,
@@ -40,12 +41,10 @@ export const enum GameUXState {
 
 export type GameUXOptionType = {
   startPosition: string;
-  setupEvents: boolean;
 };
 
 const DEFAULT_OPTIONS = {
   startPosition: DEFAULT_POSITION_STRING,
-  setupEvents: true,
 };
 
 export class GameUX {
@@ -65,6 +64,11 @@ export class GameUX {
     this.divWidth = this.div.offsetWidth;
     this.divHeight = this.div.offsetHeight;
     this.onTop = NORTH;
+    this.options = options;
+    this.game = newGameWithMoves(loadPosition(options.startPosition));
+  }
+
+  setGame(options: GameUXOptionType) {
     this.options = options;
     this.game = newGameWithMoves(loadPosition(options.startPosition));
   }

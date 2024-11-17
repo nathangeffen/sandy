@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS event (
 );
 
 CREATE TABLE IF NOT EXISTS position (
-  id INT PRIMARY KEY,
+  id INTEGER PRIMARY KEY,
   user_id INT DEFAULT 0,
   name TEXT DEFAULT "anonymous",
   position_string TEXT NOT NULL,
