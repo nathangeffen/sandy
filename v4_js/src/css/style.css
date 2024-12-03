@@ -115,6 +115,16 @@
         margin-top: 9px;
 }
 
+button.selectSavedPositionButton, button.placeInPlayingPool {
+        width: 200px;
+        margin-top: 12px;
+        margin-bottom: 12px;
+}
+
 .message {
         color: red;
+}
+
+tr.pool-entry {
+        cursor: grab;
 }

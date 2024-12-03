@@ -16,7 +16,6 @@ export class Record {
   }
 
   update(this: Record) {
-    console.log("Updating record");
     this.div.innerHTML = "";
     this.gameUX.game.history.head().traverse((position: Position) => {
       const elem = document.createElement('a');

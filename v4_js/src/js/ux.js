@@ -7,10 +7,13 @@ import { Record } from "./components/record.js";
 import { Result } from "./components/result.js";
 import { ScoreBoard } from "./components/scoreboard.js";
 import { Copy } from "./components/copy.js";
+import { SelectPosition } from "./components/selectposition.js";
 import { PositionSetup } from "./components/positionsetup.js";
 import { PositionForm } from "./components/positionform.js";
 import { Save } from "./components/save.js";
 import { Analyze } from "./components/analyze.js";
+import { PlacePool } from "./components/placepool.js";
+import { Pool } from "./components/pool.js";
 const componentSpecs = [
     {
         name: 'message',
@@ -48,6 +51,11 @@ const componentSpecs = [
         typeName: Copy
     },
     {
+        name: "selectPosition",
+        tagName: "span",
+        typeName: SelectPosition
+    },
+    {
         name: 'positionSetup',
         tagName: 'div',
         typeName: PositionSetup
@@ -71,6 +79,16 @@ const componentSpecs = [
         name: 'analyze',
         tagName: 'a',
         typeName: Analyze
+    },
+    {
+        name: "pool",
+        tagName: "table",
+        typeName: Pool
+    },
+    {
+        name: "placePool",
+        tagName: "button",
+        typeName: PlacePool
     }
 ];
 export const createGameUX = function (divID, options) {

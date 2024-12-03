@@ -9,6 +9,9 @@
     "forceConsistentCasingInFileNames": true,
     // "noEmit": true,
     // "allowImportingTsExtensions" : true,
+    "paths": {
+      "socket.io-client": ["./node_modules/socket.io-client"]
+    },
     "strict": true,
     "skipLibCheck": true
   }

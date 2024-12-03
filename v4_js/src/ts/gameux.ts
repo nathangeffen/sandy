@@ -40,12 +40,12 @@ export const enum GameUXState {
 };
 
 export type GameUXOptionType = {
-  startPosition: string;
+  startPosition: string,
+  gameUXState: GameUXState,
+  southId: string,
+  northId: string
 };
 
-const DEFAULT_OPTIONS = {
-  startPosition: DEFAULT_POSITION_STRING,
-};
 
 export class GameUX {
   game: Game;
@@ -57,15 +57,24 @@ export class GameUX {
   selectedPiece: [number, number] | null = null;
   onTop: number;
   components: { [key: string]: any } = {};
-  gameUXState: GameUXState = GameUXState.WaitingUser;
+  gameUXState: GameUXState;
 
-  constructor(div: HTMLDivElement, options: GameUXOptionType = DEFAULT_OPTIONS) {
+  constructor(div: HTMLDivElement, options: GameUXOptionType) {
+
+    let defaults = {
+      startPosition: DEFAULT_POSITION_STRING,
+      gameUXState: GameUXState.WaitingUser,
+      southId: "",
+      northId: ""
+    };
+
+    this.options = Object.assign({}, defaults, options);
     this.div = div;
     this.divWidth = this.div.offsetWidth;
     this.divHeight = this.div.offsetHeight;
     this.onTop = NORTH;
-    this.options = options;
-    this.game = newGameWithMoves(loadPosition(options.startPosition));
+    this.game = newGameWithMoves(loadPosition(this.options.startPosition));
+    this.gameUXState = this.options.gameUXState;
   }
 
   setGame(options: GameUXOptionType) {

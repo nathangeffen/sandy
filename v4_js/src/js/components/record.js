@@ -5,7 +5,6 @@ export class Record {
         this.div = div;
     }
     update() {
-        console.log("Updating record");
         this.div.innerHTML = "";
         this.gameUX.game.history.head().traverse((position) => {
             const elem = document.createElement('a');

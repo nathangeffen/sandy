@@ -268,7 +268,6 @@ export class Board {
             frozen.setAttribute('stroke', "Red");
         };
         this.update = function () {
-            console.log("Updating board");
             const position = this.gameUX.game.position;
             this.updateSideIndicators();
             for (let rank = 0; rank < position.ranks; rank++) {
@@ -379,6 +378,7 @@ export class Board {
         };
         this.updateBasedOnState = function (square, file, rank) {
             const gameUX = this.gameUX;
+            console.log("State: ", gameUX.gameUXState);
             switch (gameUX.gameUXState) {
                 case 0 /* GameUXState.SettingUp */:
                     gameUX.components['positionSetup']?.setSquare(file, rank);

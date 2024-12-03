@@ -12,14 +12,10 @@ export const FROZEN_SQUARE_IMAGE = '/images/cross-frozen.svg';
 export const DIV_X_MARGIN = 50;
 export const DIV_Y_MARGIN = 200;
 ;
-const DEFAULT_OPTIONS = {
-    startPosition: DEFAULT_POSITION_STRING,
-};
 export class GameUX {
-    constructor(div, options = DEFAULT_OPTIONS) {
+    constructor(div, options) {
         this.selectedPiece = null;
         this.components = {};
-        this.gameUXState = 1 /* GameUXState.WaitingUser */;
         this.get = function (className, tagName = "") {
             const elem = this.div.querySelector(`.${className}`);
             if (elem && tagName && elem.tagName.toLowerCase() !== tagName.toLowerCase()) {
@@ -34,12 +30,19 @@ export class GameUX {
                 }
             }
         };
+        let defaults = {
+            startPosition: DEFAULT_POSITION_STRING,
+            gameUXState: 1 /* GameUXState.WaitingUser */,
+            southId: "",
+            northId: ""
+        };
+        this.options = Object.assign({}, defaults, options);
         this.div = div;
         this.divWidth = this.div.offsetWidth;
         this.divHeight = this.div.offsetHeight;
         this.onTop = NORTH;
-        this.options = options;
-        this.game = newGameWithMoves(loadPosition(options.startPosition));
+        this.game = newGameWithMoves(loadPosition(this.options.startPosition));
+        this.gameUXState = this.options.gameUXState;
     }
     setGame(options) {
         this.options = options;

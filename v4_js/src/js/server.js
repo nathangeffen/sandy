@@ -3,12 +3,13 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Server } from 'socket.io';
-import pkg from 'sqlite3';
+import Database from 'better-sqlite3';
 import { DEFAULT_POSITION_STRING } from './game.js';
 import { createRequire } from "module";
+// import { spec } from 'node:test/reporters';
+// import { Specification } from './components/specification.js';
 const require = createRequire(import.meta.url);
 const nunjucks = require('nunjucks');
-const { Database } = pkg;
 const port = 3000;
 const app = express();
 const server = createServer(app);
@@ -30,18 +31,16 @@ app.get('/', (_, res) => {
 app.get('/findopponent', (_, res) => {
     res.render('findopponent.html', { title: 'Find opponent' });
 });
-app.get('/play', (_, res) => {
-    res.render('play.html', { title: 'Play' });
+app.get('/play', (req, res) => {
+    res.render('play.html', {
+        startPosition: (req.query.position) ? req.query.position : DEFAULT_POSITION_STRING,
+        southPlayerID: "XXX",
+        northPlayerID: "YYY"
+    });
 });
 app.get('/analyze', (req, res) => {
-    console.log("query position", req.query.position);
     res.render('analyze.html', {
-        title: 'Analyze',
-        startPosition: (req.query.position) ? req.query.position : DEFAULT_POSITION_STRING,
-        setupEvents: true,
-        flip: true,
-        draw: false,
-        resign: false,
+        startPosition: (req.query.position) ? req.query.position : DEFAULT_POSITION_STRING
     });
 });
 app.get('/position', (_, res) => {
@@ -52,12 +51,8 @@ app.get('/position', (_, res) => {
     });
 });
 app.get('/loadpositions', (_, res) => {
-    let positionSpecifications = [];
-    db.each("SELECT name, specification FROM position", (_, row) => {
-        positionSpecifications.push(row);
-    }, () => {
-        res.json(positionSpecifications);
-    });
+    const rows = db.prepare("SELECT name, specification FROM position").all();
+    res.json(rows);
 });
 app.post('/saveposition', (req, res) => {
     const specification = req.body['specification'];
@@ -75,34 +70,82 @@ app.post('/saveposition', (req, res) => {
         return `${millisecondsSince20241117}-${hash}`;
     };
     const uniqueName = generateUniqueName();
-    const handleResultFromDatabaseAfterSavePosition = function (error) {
-        let message = `Position saved: ${uniqueName}`;
-        const UNIQUE_CONSTRAINT_FAILED = 19;
-        if (error) {
-            if (error.errno === UNIQUE_CONSTRAINT_FAILED) {
-                message = "You have already saved this position.";
-            }
-            else {
-                message = `Failed to save position: ${String(error)}`;
-            }
-        }
-        res.json({ 'message': message });
-    };
-    db.run("INSERT INTO position(name, specification) VALUES(?,?)", [uniqueName, specification], handleResultFromDatabaseAfterSavePosition);
+    let message;
+    try {
+        db.prepare("INSERT INTO position(name, specification) VALUES(?,?)").
+            run(uniqueName, specification);
+        message = `Position saved: ${uniqueName}`;
+    }
+    catch (error) {
+        message = `An error occurred: ${error}`;
+    }
+    res.json({ 'message': message });
 });
 app.get('/getposition', (req, res) => {
 });
 app.use(express.static(__dirname));
+const placeInPool = function (poolEntry) {
+    let positionId = 1;
+    if (poolEntry.name !== "DEFAULT") {
+        const row = db.prepare("SELECT rowid FROM position WHERE name = ? AND user_id = 0").
+            get(poolEntry.name);
+        positionId = row.rowid;
+    }
+    db.prepare("INSERT INTO gamesearch (session, position_id) VALUES(?, ?)").
+        run(poolEntry.session, positionId);
+};
+const removeFromPool = function (poolEntry) {
+    db.prepare("DELETE FROM gamesearch WHERE session = ?").
+        run(poolEntry.session);
+};
+const handlePoolEntry = function (poolEntry) {
+    if (poolEntry.gameRequested === true) {
+        removeFromPool(poolEntry);
+        placeInPool(poolEntry);
+    }
+    else {
+        removeFromPool(poolEntry);
+    }
+};
+const getPoolEntries = function () {
+    const rows = db.prepare("SELECT A.session, B.name FROM gameSearch A, position B WHERE A.position_id = B.rowid AND A.created > datetime('now','-3 minute')")
+        .all();
+    return rows;
+};
 io.on('connection', (socket) => {
     console.log('a user connected', io.engine.clientsCount, io.of('/').sockets.size, socket.id);
-    socket.on('chat message', (msg) => {
-        console.log('message: ' + msg);
-        io.emit('chat message', msg);
+    socket.on('placePool', (msg) => {
+        let entries;
+        (async () => {
+            handlePoolEntry(msg);
+            entries = getPoolEntries();
+        })().then(() => {
+            io.emit('placePool', entries);
+        });
+    });
+    socket.on('chooseopponent', (players) => {
+        console.log("Players", players);
+        io.emit(players);
     });
     socket.on('disconnect', () => {
-        console.log('user disconnected', io.engine.clientsCount, io.of('/').sockets.size, socket.id);
+        const poolEntry = {
+            session: socket.id,
+            name: "DEFAULT",
+            gameRequested: false
+        };
+        (async () => removeFromPool(poolEntry))()
+            .then(() => {
+            console.log('user disconnected', io.engine.clientsCount, io.of('/').sockets.size, socket.id);
+        });
     });
 });
+setInterval(() => {
+    (async () => {
+        db.prepare("DELETE FROM gamesearch WHERE created <= datetime('now','-5 minute')").run();
+    })().then(() => {
+        io.emit('placePool', getPoolEntries());
+    });
+}, 10000);
 server.listen(port, () => {
     console.log(`server running at http://localhost:${port}`);
 });

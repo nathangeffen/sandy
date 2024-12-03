@@ -245,10 +245,10 @@ export const loadPosition = function(
   try {
     parsed_regex_position = REGEX_POSITION.exec(positionString);
   } catch {
-    throw "Cannot parse position string";
+    throw `Cannot parse position string: ${positionString}`;
   }
   if (parsed_regex_position === null) {
-    throw "Cannot parse position string";
+    throw `Cannot parse position string: ${positionString}`;
   }
   const groups = parsed_regex_position.groups;
   const { files, ranks, pieces, points, blocks, side, startSouth, startNorth,

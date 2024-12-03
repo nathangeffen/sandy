@@ -112,7 +112,6 @@ export class PositionSetup {
             }
         };
         this.setSquare = function (file, rank) {
-            console.log("Selecting square", file, rank);
             const position = this.gameUX.game.position;
             const action = this.action;
             const square = position.squares[fr(position.files, file, rank)];

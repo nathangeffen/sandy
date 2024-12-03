@@ -37,6 +37,10 @@ import {
 } from "./components/copy.js";
 
 import {
+  SelectPosition
+} from "./components/selectposition.js";
+
+import {
   PositionSetup
 } from "./components/positionsetup.js";
 
@@ -51,6 +55,14 @@ import {
 import {
   Analyze
 } from "./components/analyze.js";
+
+import {
+  PlacePool
+} from "./components/placepool.js";
+
+import {
+  Pool
+} from "./components/pool.js";
 
 const componentSpecs: ComponentEntry[] = [
   {
@@ -89,6 +101,11 @@ const componentSpecs: ComponentEntry[] = [
     typeName: Copy
   },
   {
+    name: "selectPosition",
+    tagName: "span",
+    typeName: SelectPosition
+  },
+  {
     name: 'positionSetup',
     tagName: 'div',
     typeName: PositionSetup
@@ -112,6 +129,16 @@ const componentSpecs: ComponentEntry[] = [
     name: 'analyze',
     tagName: 'a',
     typeName: Analyze
+  },
+  {
+    name: "pool",
+    tagName: "table",
+    typeName: Pool
+  },
+  {
+    name: "placePool",
+    tagName: "button",
+    typeName: PlacePool
   }
 ];
 

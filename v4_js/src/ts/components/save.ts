@@ -32,7 +32,6 @@ export class Save {
       })
         .then((response) => response.json())
         .then((json) => {
-          console.log(json);
           this.gameUX.components['message'].set(json.message, 0);
         });
     });
