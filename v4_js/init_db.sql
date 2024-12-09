@@ -13,9 +13,9 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE TABLE IF NOT EXISTS game (
-  south_user_id INTEGER DEFAULT 0 NOT NULL,
-  north_user_id INTEGER DEFAULT 0 NOT NULL,
-  start_position TEXT NOT NULL,
+  south STRING NOT NULL,
+  north STRING NOT NULL,
+  start_position_id INTEGER NOT NULL,
   south_start_seconds INTEGER DEFAULT 300,
   north_start_seconds INTEGER DEFAULT 300,
   south_increment_seconds INTEGER DEFAULT 2,

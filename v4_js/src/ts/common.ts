@@ -1,3 +1,5 @@
+import { Move } from "./game.js";
+
 export type PoolEntry = {
   session: string,
   name: string,
@@ -5,9 +7,19 @@ export type PoolEntry = {
 };
 
 export type GameDetails = {
-  action: string,
+  id: number;
   name: string,
+  positionId: number,
   specification: string,
-  opponent: string,
+  side: string,
   south: string
+  north: string
+};
+
+
+export type TransmitMove = {
+  gameId: number,
+  transmitter: string,
+  ply: number,
+  move: Move | null
 };

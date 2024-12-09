@@ -2,7 +2,9 @@
 
 {% block content %}
 
-<div id="game-1" class="game"></div>
+<div id="game-1" class="game">
+     {% include "game.html" %}
+</div>
 {% endblock %}
 
 {% block footerscripts %}
@@ -19,9 +21,12 @@
     import {createGameUX} from "/js/ux.js";
     createGameUX('game-1', {
         startPosition: '{{ startPosition }}',
-        gameUXState:   '{{ gameUXState }}',
-        southPlayerID: '{{ southPlayerID }}',
-        northPlayerID: '{{ northPlayerID }}'
+        gameUXState:   {{ gameUXState }},
+        southPlayerID: '{{ south }}',
+        northPlayerID: '{{ north }}',
+        inplay: true,
+        thisSide: '{{ thisSide }}',
+        gameId: '{{gameId}}'
     });
 </script>
 {% endblock %}

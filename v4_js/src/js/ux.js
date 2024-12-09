@@ -14,6 +14,7 @@ import { Save } from "./components/save.js";
 import { Analyze } from "./components/analyze.js";
 import { PlacePool } from "./components/placepool.js";
 import { Pool } from "./components/pool.js";
+import { ManageGame } from "./components/managegame.js";
 const componentSpecs = [
     {
         name: 'message',
@@ -89,6 +90,11 @@ const componentSpecs = [
         name: "placePool",
         tagName: "button",
         typeName: PlacePool
+    },
+    {
+        name: "manageGame",
+        tagName: "",
+        typeName: ManageGame
     }
 ];
 export const createGameUX = function (divID, options) {

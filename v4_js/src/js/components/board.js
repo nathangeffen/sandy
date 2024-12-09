@@ -385,6 +385,7 @@ export class Board {
                     this.redraw();
                     break;
                 case 2 /* GameUXState.WaitingOtherPlayer */:
+                    break;
                 case 1 /* GameUXState.WaitingUser */:
                     if (square) {
                         this.selectPiece(square, file, rank);
@@ -392,7 +393,7 @@ export class Board {
                     }
                     break;
                 case 3 /* GameUXState.PieceSelected */:
-                    if (this.movePiece(file, rank) === true) {
+                    if (this.movePiece(file, rank) === true && gameUX.inplay === true) {
                         gameUX.gameUXState = 2 /* GameUXState.WaitingOtherPlayer */;
                     }
                     else {

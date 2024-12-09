@@ -64,6 +64,10 @@ import {
   Pool
 } from "./components/pool.js";
 
+import {
+  ManageGame
+} from "./components/managegame.js";
+
 const componentSpecs: ComponentEntry[] = [
   {
     name: 'message',
@@ -139,6 +143,11 @@ const componentSpecs: ComponentEntry[] = [
     name: "placePool",
     tagName: "button",
     typeName: PlacePool
+  },
+  {
+    name: "manageGame",
+    tagName: "",
+    typeName: ManageGame
   }
 ];
 

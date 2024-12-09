@@ -6,12 +6,9 @@ import {
   GameUX
 } from "../gameux.js";
 
-import * as _ from "socket.io-client";
-
 export class PlacePool {
   gameUX: GameUX;
   button: HTMLButtonElement;
-  socket = io();
   specificationName = "DEFAULT";
   gameRequested = false;
 
@@ -22,8 +19,7 @@ export class PlacePool {
   }
 
   chooseOpponent = function(this: PlacePool, opponentId: string) {
-    console.log("Choosing opponent");
-    this.socket.emit('chooseopponent', [this.socket.id, opponentId]);
+    this.gameUX.socket.emit('chooseopponent', [this.gameUX.socket.id, opponentId]);
   }
 
   addEvents = function(this: PlacePool) {
@@ -32,11 +28,11 @@ export class PlacePool {
       e.preventDefault();
       placePool.gameRequested = !placePool.gameRequested;
       const poolEntry: PoolEntry = {
-        session: placePool.socket.id,
+        session: placePool.gameUX.socket.id,
         name: placePool.specificationName,
         gameRequested: placePool.gameRequested
       };
-      placePool.socket.emit("placePool", poolEntry);
+      placePool.gameUX.socket.emit("placePool", poolEntry);
       if (placePool.gameRequested === true) {
         placePool.button.textContent = "Leave playing pool";
       } else {
@@ -44,16 +40,18 @@ export class PlacePool {
       }
     });
 
-    this.socket.on('placePool', (entries: PoolEntry[]) => {
-      this.gameUX.components['pool'].setEntries(entries, this.socket.id);
+    this.gameUX.socket.on('placePool', (entries: PoolEntry[]) => {
+      this.gameUX.components['pool'].setEntries(entries, this.gameUX.socket.id);
     });
 
-    this.socket.on(this.socket.id, (gameDetails: Object) => {
-      if (gameDetails.action !== "startgame") {
-        console.log("Action not understood:", gameDetails.action);
-        return;
-      }
-
+    this.gameUX.socket.on("connect", () => {
+      this.gameUX.socket.on(this.gameUX.socket.id, (gameDetails: GameDetails) => {
+        let url: string;
+        const side = gameDetails.side;
+        url = `/play?game=${String(gameDetails.id)}&side=${side}`;
+        console.log("Url:", url);
+        document.location.href = url;
+      });
     });
   }
 }

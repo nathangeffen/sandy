@@ -14,8 +14,10 @@ export const DIV_Y_MARGIN = 200;
 ;
 export class GameUX {
     constructor(div, options) {
+        this.inplay = false;
         this.selectedPiece = null;
         this.components = {};
+        this.socket = io();
         this.get = function (className, tagName = "") {
             const elem = this.div.querySelector(`.${className}`);
             if (elem && tagName && elem.tagName.toLowerCase() !== tagName.toLowerCase()) {
@@ -34,7 +36,10 @@ export class GameUX {
             startPosition: DEFAULT_POSITION_STRING,
             gameUXState: 1 /* GameUXState.WaitingUser */,
             southId: "",
-            northId: ""
+            northId: "",
+            inplay: false,
+            thisSide: "S",
+            gameId: 0
         };
         this.options = Object.assign({}, defaults, options);
         this.div = div;
@@ -43,18 +48,22 @@ export class GameUX {
         this.onTop = NORTH;
         this.game = newGameWithMoves(loadPosition(this.options.startPosition));
         this.gameUXState = this.options.gameUXState;
+        this.inplay = this.options.inplay;
+        this.gameId = this.options.gameId;
     }
     setGame(options) {
         this.options = options;
         this.game = newGameWithMoves(loadPosition(options.startPosition));
     }
     addComponent(component) {
-        const elem = this.get(component.name, component.tagName);
-        if (!elem)
-            return;
-        if (component.tagName &&
-            component.tagName.toLowerCase() !== component.tagName.toLowerCase())
-            return;
+        let elem = null;
+        if (component.tagName !== "") {
+            elem = this.get(component.name, component.tagName);
+            if (!elem)
+                return;
+            if (component.tagName.toLowerCase() !== component.tagName.toLowerCase())
+                return;
+        }
         this.components[component.name] = new component.typeName(this, elem);
     }
 }

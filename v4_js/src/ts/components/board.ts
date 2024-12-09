@@ -12,6 +12,7 @@ import {
   FROZEN_SQUARE_IMAGE
 } from "../gameux.js";
 
+
 const SVGNS = "http://www.w3.org/2000/svg";
 const LAST_MOVE_COLOR = 'Yellow';
 
@@ -501,6 +502,7 @@ export class Board {
         this.redraw();
         break;
       case GameUXState.WaitingOtherPlayer:
+        break;
       case GameUXState.WaitingUser:
         if (square) {
           this.selectPiece(square, file, rank);
@@ -508,7 +510,7 @@ export class Board {
         }
         break;
       case GameUXState.PieceSelected:
-        if (this.movePiece(file, rank) === true) {
+        if (this.movePiece(file, rank) === true && gameUX.inplay === true) {
           gameUX.gameUXState = GameUXState.WaitingOtherPlayer;
         } else {
           gameUX.gameUXState = GameUXState.WaitingUser;

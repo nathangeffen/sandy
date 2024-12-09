@@ -34,7 +34,7 @@
 {% endblock %}
 
 {% block footerscripts %}
-    <script src="/socket.io/socket.io.js"></script>
+    {{ super() }}
     <script type="module">
         import {createGameUX} from "/js/ux.js";
         const gameUX = createGameUX('find-opponent-1');

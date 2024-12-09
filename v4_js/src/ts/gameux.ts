@@ -6,6 +6,7 @@ import {
   loadPosition,
 } from "./game.js";
 
+import * as _ from "socket.io-client";
 
 // Global constants
 
@@ -43,7 +44,10 @@ export type GameUXOptionType = {
   startPosition: string,
   gameUXState: GameUXState,
   southId: string,
-  northId: string
+  northId: string,
+  inplay: boolean,
+  thisSide: string,
+  gameId: number
 };
 
 
@@ -54,10 +58,13 @@ export class GameUX {
   divHeight: number;
   squareDim!: number;
   options: GameUXOptionType;
+  inplay: boolean = false;
+  gameId: number
   selectedPiece: [number, number] | null = null;
   onTop: number;
   components: { [key: string]: any } = {};
   gameUXState: GameUXState;
+  socket = io();
 
   constructor(div: HTMLDivElement, options: GameUXOptionType) {
 
@@ -65,7 +72,10 @@ export class GameUX {
       startPosition: DEFAULT_POSITION_STRING,
       gameUXState: GameUXState.WaitingUser,
       southId: "",
-      northId: ""
+      northId: "",
+      inplay: false,
+      thisSide: "S",
+      gameId: 0
     };
 
     this.options = Object.assign({}, defaults, options);
@@ -75,6 +85,8 @@ export class GameUX {
     this.onTop = NORTH;
     this.game = newGameWithMoves(loadPosition(this.options.startPosition));
     this.gameUXState = this.options.gameUXState;
+    this.inplay = this.options.inplay;
+    this.gameId = this.options.gameId
   }
 
   setGame(options: GameUXOptionType) {
@@ -91,10 +103,12 @@ export class GameUX {
   }
 
   addComponent(this: GameUX, component: ComponentEntry) {
-    const elem = this.get(component.name, component.tagName);
-    if (!elem) return;
-    if (component.tagName &&
-      component.tagName.toLowerCase() !== component.tagName.toLowerCase()) return;
+    let elem = null;
+    if (component.tagName !== "") {
+      elem = this.get(component.name, component.tagName);
+      if (!elem) return;
+      if (component.tagName.toLowerCase() !== component.tagName.toLowerCase()) return;
+    }
     this.components[component.name] = new component.typeName(this, elem);
   }
 

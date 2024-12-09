@@ -5,19 +5,13 @@
 <h1>Analyze</h1>
 
 <div id="game-1" class="game">
-     {% include "game.html" %}
+    {% include "game.html" %}
 </div>
 
 {% endblock %}
 
 {% block footerscripts %}
-{{block.super}}
-<script type="module" src="js/gameux.js" />
-<script src="/socket.io/socket.io.js" />
-
-<script>
-    const socket = io();
-</script>
+{{ super() }}
 
 <script type="module">
     import {createGameUX} from "/js/ux.js";
@@ -25,4 +19,5 @@
         startPosition: '{{ startPosition }}'
     });
 </script>
+
 {% endblock %}

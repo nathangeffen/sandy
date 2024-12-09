@@ -10,8 +10,9 @@
 {% endblock %}
 
 {% block footerscripts %}
-<script type="module">
-        import {createGameUX} from "/js/ux.js";
-        createGameUX('position-1');
-</script>
+        {{ super() }}
+        <script type="module">
+                import {createGameUX} from "/js/ux.js";
+                createGameUX('position-1');
+        </script>
 {% endblock %}
