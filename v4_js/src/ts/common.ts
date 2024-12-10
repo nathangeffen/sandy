@@ -1,5 +1,7 @@
 import { Move } from "./game.js";
 
+export const RESIGN = -100000;
+
 export type PoolEntry = {
   session: string,
   name: string,

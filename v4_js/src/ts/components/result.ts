@@ -16,6 +16,8 @@ const reasonText = function(reason: GameOverReason, ply: number) {
       return `No points scored for ${ply} ply`;
     case GameOverReason.PointsScored:
       return "Winning points scored";
+    case GameOverReason.Resignation:
+      return "Resignation";
     default:
       return "";
   }

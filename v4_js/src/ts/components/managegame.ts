@@ -1,9 +1,10 @@
 import {
-  move as gameMove
+  move as gameMove, SOUTH, NORTH, GameStatus, GameOverReason,
+  move
 } from "../game.js";
 
 import {
-  TransmitMove
+  TransmitMove, RESIGN
 } from "../common.js";
 
 import {
@@ -15,6 +16,14 @@ import {
   Board
 } from "../components/board.js";
 
+const isItMe = function(sideNum: number, sideString: string) {
+  if (sideNum === SOUTH && sideString.toLowerCase() === "south")
+    return true;
+  if (sideNum === NORTH && sideString.toLowerCase() === "north")
+    return true;
+  return false;
+}
+
 export class ManageGame {
   gameUX: GameUX;
   board: Board | null;
@@ -23,7 +32,7 @@ export class ManageGame {
   constructor(gameUX: GameUX) {
     this.gameUX = gameUX;
     this.board = gameUX.components["board"];
-    const toPlay = (gameUX.options.thisSide === "South") ? "" : "opponent's";
+    const toPlay = isItMe(gameUX.game.position.side, gameUX.options.thisSide) ? "" : "opponent's";
     const message = gameUX.components['message'];
     if (message) message.set(`
           You are ${gameUX.options.thisSide}.
@@ -57,10 +66,20 @@ export class ManageGame {
     const manageGame = this;
     const gameUX = this.gameUX;
     // HandleEvent to receive move, then inc plySent and plyReceived
-    gameUX.socket.on(`g-${this.gameUX.gameId}`, (moveDetails: any) => {
-      console.log("Received move", moveDetails, manageGame.plySync, moveDetails.ply);
-      if (manageGame.plySync !== moveDetails.ply - 1) return;
-      console.log("Processing move");
+    gameUX.socket.on(`g-${this.gameUX.gameId}`, (moveDetails: TransmitMove) => {
+      const position = gameUX.game.position;
+      if (moveDetails.move === null && moveDetails.ply === RESIGN) {
+        position.gameStatus = (moveDetails.transmitter.toLowerCase() === "south")
+          ? GameStatus.North : GameStatus.South;
+        position.gameOverReason = GameOverReason.Resignation;
+        const message = gameUX.components['message'];
+        if (message) message.set("");
+        gameUX.gameUXState = GameUXState.GameOver;
+        gameUX.update();
+        return;
+      }
+      // TO DO: Handle draw offers and acceptance
+      if (manageGame.plySync !== moveDetails.ply - 1 || moveDetails.move === null) return;
       try {
         gameMove(gameUX.game, moveDetails.move);
         gameUX.gameUXState = GameUXState.WaitingUser;

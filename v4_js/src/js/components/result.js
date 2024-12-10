@@ -9,6 +9,8 @@ const reasonText = function (reason, ply) {
             return `No points scored for ${ply} ply`;
         case GameOverReason.PointsScored:
             return "Winning points scored";
+        case GameOverReason.Resignation:
+            return "Resignation";
         default:
             return "";
     }

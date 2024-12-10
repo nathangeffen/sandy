@@ -42,12 +42,16 @@ app.get('/play', (req, res) => {
         south: game.south,
         north: game.north,
         thisSide: side,
-        gameId: game.rowid
+        gameId: game.rowid,
+        flip: true,
+        draw: false,
+        resign: true
     });
 });
 app.get('/analyze', (req, res) => {
     res.render('analyze.html', {
-        startPosition: (req.query.position) ? req.query.position : DEFAULT_POSITION_STRING
+        startPosition: (req.query.position) ? req.query.position : DEFAULT_POSITION_STRING,
+        flip: true
     });
 });
 app.get('/position', (_, res) => {
@@ -200,7 +204,6 @@ io.on('connection', (socket) => {
         io.emit(players[1], gameDetails);
     });
     socket.on("game", (transmitMove) => {
-        console.log(transmitMove);
         io.emit(`g-${transmitMove.gameId}`, transmitMove);
     });
     socket.on('disconnect', () => {

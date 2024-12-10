@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { Server } from 'socket.io';
 import Database from 'better-sqlite3';
 import { DEFAULT_POSITION_STRING } from './game.js';
@@ -51,13 +51,17 @@ app.get('/play', (req, res) => {
                 south: game.south,
                 north: game.north,
                 thisSide: side,
-                gameId: game.rowid
+                gameId: game.rowid,
+                flip: true,
+                draw: false,
+                resign: true
         });
 });
 
 app.get('/analyze', (req, res) => {
         res.render('analyze.html', {
-                startPosition: (req.query.position) ? req.query.position : DEFAULT_POSITION_STRING
+                startPosition: (req.query.position) ? req.query.position : DEFAULT_POSITION_STRING,
+                flip: true
         });
 });
 
@@ -239,7 +243,6 @@ io.on('connection', (socket) => {
         });
 
         socket.on("game", (transmitMove: TransmitMove) => {
-                console.log(transmitMove);
                 io.emit(`g-${transmitMove.gameId}`, transmitMove);
         });
 

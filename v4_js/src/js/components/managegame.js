@@ -1,4 +1,12 @@
-import { move as gameMove } from "../game.js";
+import { move as gameMove, SOUTH, NORTH, GameStatus, GameOverReason } from "../game.js";
+import { RESIGN } from "../common.js";
+const isItMe = function (sideNum, sideString) {
+    if (sideNum === SOUTH && sideString.toLowerCase() === "south")
+        return true;
+    if (sideNum === NORTH && sideString.toLowerCase() === "north")
+        return true;
+    return false;
+};
 export class ManageGame {
     constructor(gameUX) {
         this.plySync = 0;
@@ -31,10 +39,21 @@ export class ManageGame {
             const gameUX = this.gameUX;
             // HandleEvent to receive move, then inc plySent and plyReceived
             gameUX.socket.on(`g-${this.gameUX.gameId}`, (moveDetails) => {
-                console.log("Received move", moveDetails, manageGame.plySync, moveDetails.ply);
-                if (manageGame.plySync !== moveDetails.ply - 1)
+                const position = gameUX.game.position;
+                if (moveDetails.move === null && moveDetails.ply === RESIGN) {
+                    position.gameStatus = (moveDetails.transmitter.toLowerCase() === "south")
+                        ? GameStatus.North : GameStatus.South;
+                    position.gameOverReason = GameOverReason.Resignation;
+                    const message = gameUX.components['message'];
+                    if (message)
+                        message.set("");
+                    gameUX.gameUXState = 4 /* GameUXState.GameOver */;
+                    gameUX.update();
                     return;
-                console.log("Processing move");
+                }
+                // TO DO: Handle draw offers and acceptance
+                if (manageGame.plySync !== moveDetails.ply - 1 || moveDetails.move === null)
+                    return;
                 try {
                     gameMove(gameUX.game, moveDetails.move);
                     gameUX.gameUXState = 1 /* GameUXState.WaitingUser */;
@@ -54,7 +73,7 @@ export class ManageGame {
         };
         this.gameUX = gameUX;
         this.board = gameUX.components["board"];
-        const toPlay = (gameUX.options.thisSide === "South") ? "" : "opponent's";
+        const toPlay = isItMe(gameUX.game.position.side, gameUX.options.thisSide) ? "" : "opponent's";
         const message = gameUX.components['message'];
         if (message)
             message.set(`

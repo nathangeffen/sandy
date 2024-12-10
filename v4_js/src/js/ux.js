@@ -2,6 +2,7 @@ import { GameUX } from "./gameux.js";
 import { Message } from "./components/message.js";
 import { Board } from "./components/board.js";
 import { Flip } from "./components/flip.js";
+import { Resign } from "./components/resign.js";
 import { Specification } from "./components/specification.js";
 import { Record } from "./components/record.js";
 import { Result } from "./components/result.js";
@@ -30,6 +31,11 @@ const componentSpecs = [
         name: 'flip',
         tagName: 'button',
         typeName: Flip
+    },
+    {
+        name: 'resign',
+        tagName: 'button',
+        typeName: Resign
     },
     {
         name: 'result',

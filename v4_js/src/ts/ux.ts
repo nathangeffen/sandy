@@ -17,6 +17,10 @@ import {
 } from "./components/flip.js";
 
 import {
+  Resign
+} from "./components/resign.js";
+
+import {
   Specification
 } from "./components/specification.js";
 
@@ -83,6 +87,11 @@ const componentSpecs: ComponentEntry[] = [
     name: 'flip',
     tagName: 'button',
     typeName: Flip
+  },
+  {
+    name: 'resign',
+    tagName: 'button',
+    typeName: Resign
   },
   {
     name: 'result',
