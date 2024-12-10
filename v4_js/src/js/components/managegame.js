@@ -1,7 +1,7 @@
 import { move as gameMove } from "../game.js";
 export class ManageGame {
     constructor(gameUX) {
-        this.plySync = -1;
+        this.plySync = 0;
         this.update = function () {
             if (!this.board)
                 return;
@@ -18,6 +18,12 @@ export class ManageGame {
                     move: position.move
                 };
                 gameUX.socket.emit("game", transmitMove);
+                const message = gameUX.components['message'];
+                if (message)
+                    message.set(`
+          You are ${gameUX.options.thisSide}.
+          It's your opponent's turn to play.
+        `);
             }
         };
         this.addEvents = function () {
@@ -33,6 +39,12 @@ export class ManageGame {
                     gameMove(gameUX.game, moveDetails.move);
                     gameUX.gameUXState = 1 /* GameUXState.WaitingUser */;
                     ++manageGame.plySync;
+                    const message = gameUX.components['message'];
+                    if (message)
+                        message.set(`
+          You are ${gameUX.options.thisSide}.
+          It's your turn to play.
+        `);
                     gameUX.update();
                 }
                 catch (err) {
@@ -42,5 +54,12 @@ export class ManageGame {
         };
         this.gameUX = gameUX;
         this.board = gameUX.components["board"];
+        const toPlay = (gameUX.options.thisSide === "South") ? "" : "opponent's";
+        const message = gameUX.components['message'];
+        if (message)
+            message.set(`
+          You are ${gameUX.options.thisSide}.
+          It's your ${toPlay} turn to play.
+        `);
     }
 }

@@ -18,11 +18,17 @@ import {
 export class ManageGame {
   gameUX: GameUX;
   board: Board | null;
-  plySync: number = -1;
+  plySync: number = 0;
 
   constructor(gameUX: GameUX) {
     this.gameUX = gameUX;
     this.board = gameUX.components["board"];
+    const toPlay = (gameUX.options.thisSide === "South") ? "" : "opponent's";
+    const message = gameUX.components['message'];
+    if (message) message.set(`
+          You are ${gameUX.options.thisSide}.
+          It's your ${toPlay} turn to play.
+        `);
   }
 
   update = function(this: ManageGame) {
@@ -39,6 +45,11 @@ export class ManageGame {
         move: position.move
       };
       gameUX.socket.emit("game", transmitMove);
+      const message = gameUX.components['message'];
+      if (message) message.set(`
+          You are ${gameUX.options.thisSide}.
+          It's your opponent's turn to play.
+        `);
     }
   }
 
@@ -54,6 +65,11 @@ export class ManageGame {
         gameMove(gameUX.game, moveDetails.move);
         gameUX.gameUXState = GameUXState.WaitingUser;
         ++manageGame.plySync;
+        const message = gameUX.components['message'];
+        if (message) message.set(`
+          You are ${gameUX.options.thisSide}.
+          It's your turn to play.
+        `);
         gameUX.update();
       } catch (err) {
         alert("Error receiving move");

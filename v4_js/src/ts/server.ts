@@ -43,12 +43,14 @@ app.get('/play', (req, res) => {
         console.log("Executing play", req.query);
         const gameUXState: GameUXState = (req.query.side === 'S') ? GameUXState.WaitingUser : GameUXState.WaitingOtherPlayer;
         const game: any = dbGetGame(Number(req.query.game));
+        const side = (req.query.side === 'S') ? 'South' : 'North';
+        console.log("Side:", game.side);
         res.render('play.html', {
                 startPosition: game.specification,
                 gameUXState: gameUXState,
                 south: game.south,
                 north: game.north,
-                thisSide: game.side,
+                thisSide: side,
                 gameId: game.rowid
         });
 });
