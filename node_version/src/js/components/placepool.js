@@ -5,11 +5,18 @@ export class PlacePool {
         this.chooseOpponent = function (opponentId) {
             this.gameUX.socket.emit('chooseopponent', [this.gameUX.socket.id, opponentId]);
         };
+        this.getSpecificationName = function () {
+            const specificationInput = this.gameUX.get("selectSpecification");
+            if (specificationInput && specificationInput.value)
+                return specificationInput.value;
+            return "DEFAULT";
+        };
         this.addEvents = function () {
             const placePool = this;
             this.button.addEventListener('click', function (e) {
                 e.preventDefault();
                 placePool.gameRequested = !placePool.gameRequested;
+                placePool.specificationName = placePool.getSpecificationName();
                 const poolEntry = {
                     session: placePool.gameUX.socket.id,
                     name: placePool.specificationName,
@@ -24,6 +31,7 @@ export class PlacePool {
                 }
             });
             this.gameUX.socket.on('placePool', (entries) => {
+                console.log("Entries:", entries);
                 this.gameUX.components['pool'].setEntries(entries, this.gameUX.socket.id);
             });
             this.gameUX.socket.on("connect", () => {
@@ -31,7 +39,6 @@ export class PlacePool {
                     let url;
                     const side = gameDetails.side;
                     url = `/play?game=${String(gameDetails.id)}&side=${side}`;
-                    console.log("Url:", url);
                     document.location.href = url;
                 });
             });

@@ -10,6 +10,19 @@ const isItMe = function (sideNum, sideString) {
 export class ManageGame {
     constructor(gameUX) {
         this.plySync = 0;
+        this.setMessage = function (myTurn) {
+            const message = this.gameUX.components['message'];
+            if (!message || this.gameUX.inplay === false)
+                return;
+            const opponentMessage = myTurn ? "" : "opponent's";
+            if (this.gameUX.game.position.gameStatus === GameStatus.InPlay) {
+                message.set(`You are ${this.gameUX.options.thisSide}.
+                     It's your ${opponentMessage} turn to play.`);
+            }
+            else {
+                message.set("");
+            }
+        };
         this.update = function () {
             if (!this.board)
                 return;
@@ -26,12 +39,7 @@ export class ManageGame {
                     move: position.move
                 };
                 gameUX.socket.emit("game", transmitMove);
-                const message = gameUX.components['message'];
-                if (message)
-                    message.set(`
-          You are ${gameUX.options.thisSide}.
-          It's your opponent's turn to play.
-        `);
+                this.setMessage(false);
             }
         };
         this.addEvents = function () {
@@ -58,12 +66,7 @@ export class ManageGame {
                     gameMove(gameUX.game, moveDetails.move);
                     gameUX.gameUXState = 1 /* GameUXState.WaitingUser */;
                     ++manageGame.plySync;
-                    const message = gameUX.components['message'];
-                    if (message)
-                        message.set(`
-          You are ${gameUX.options.thisSide}.
-          It's your turn to play.
-        `);
+                    manageGame.setMessage(true);
                     gameUX.update();
                 }
                 catch (err) {
@@ -73,12 +76,6 @@ export class ManageGame {
         };
         this.gameUX = gameUX;
         this.board = gameUX.components["board"];
-        const toPlay = isItMe(gameUX.game.position.side, gameUX.options.thisSide) ? "" : "opponent's";
-        const message = gameUX.components['message'];
-        if (message)
-            message.set(`
-          You are ${gameUX.options.thisSide}.
-          It's your ${toPlay} turn to play.
-        `);
+        this.setMessage(isItMe(gameUX.game.position.side, gameUX.options.thisSide));
     }
 }

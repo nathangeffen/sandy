@@ -1,5 +1,5 @@
 export class SelectPosition {
-    constructor(gameUX, form) {
+    constructor(gameUX) {
         this.selectSavedPositionButton = null;
         this.selectSavedPositionDialog = null;
         this.select = null;
@@ -12,6 +12,7 @@ export class SelectPosition {
         const select = this.select;
         if (!select)
             return;
+        select.innerHTML = "";
         specifications.map((entry, i) => {
             let opt = document.createElement("option");
             opt.value = String(i);
@@ -55,11 +56,11 @@ export class SelectPosition {
         confirm.addEventListener("click", (e) => {
             e.preventDefault();
             const index = this.select?.selectedIndex || 0;
-            dialog.close(specifications[index].specification);
+            dialog.close(specifications[index].name);
         });
         dialog.addEventListener("close", () => {
-            const specification = dialog.returnValue;
-            specificationInput.value = specification;
+            const specificationName = dialog.returnValue;
+            specificationInput.value = specificationName;
         });
     }
 }

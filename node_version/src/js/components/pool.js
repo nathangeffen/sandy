@@ -1,7 +1,5 @@
 export class Pool {
     constructor(gameUX, table) {
-        this.addEvents = function () {
-        };
         this.setEntries = function (entries, session) {
             const tbody = this.table.querySelector('tbody');
             if (!tbody)
@@ -22,7 +20,6 @@ export class Pool {
                 tr.addEventListener('click', (event) => {
                     event.preventDefault();
                     tr.querySelectorAll("td").forEach((td) => {
-                        console.log("Calling choose opponent", td.innerText);
                         this.gameUX.components['placePool'].chooseOpponent(td.innerText);
                     });
                 });

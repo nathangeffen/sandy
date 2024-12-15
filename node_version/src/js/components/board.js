@@ -378,7 +378,6 @@ export class Board {
         };
         this.updateBasedOnState = function (square, file, rank) {
             const gameUX = this.gameUX;
-            console.log("State: ", gameUX.gameUXState);
             switch (gameUX.gameUXState) {
                 case 0 /* GameUXState.SettingUp */:
                     gameUX.components['positionSetup']?.setSquare(file, rank);

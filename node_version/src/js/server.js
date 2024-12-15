@@ -31,11 +31,9 @@ app.get('/findopponent', (_, res) => {
     res.render('findopponent.html', { title: 'Find opponent' });
 });
 app.get('/play', (req, res) => {
-    console.log("Executing play", req.query);
     const gameUXState = (req.query.side === 'S') ? 1 /* GameUXState.WaitingUser */ : 2 /* GameUXState.WaitingOtherPlayer */;
     const game = dbGetGame(Number(req.query.game));
     const side = (req.query.side === 'S') ? 'South' : 'North';
-    console.log("Side:", game.side);
     res.render('play.html', {
         startPosition: game.specification,
         gameUXState: gameUXState,
@@ -106,7 +104,6 @@ export const dbPlaceInPool = function (poolEntry) {
     if (poolEntry.name !== "DEFAULT") {
         const row = db.prepare("SELECT rowid FROM position WHERE name = ?").
             get(poolEntry.name);
-        console.log("entry, row", poolEntry, row);
         positionId = row.rowid;
     }
     db.prepare("INSERT INTO gamesearch (session, position_id) VALUES(?, ?)").
@@ -173,7 +170,6 @@ export const dbGetGame = function (id) {
     return row;
 };
 io.on('connection', (socket) => {
-    console.log('a user connected', io.engine.clientsCount, io.of('/').sockets.size, socket.id);
     socket.on('placePool', (entry) => {
         let entries;
         (async () => {
@@ -212,10 +208,7 @@ io.on('connection', (socket) => {
             name: "DEFAULT",
             gameRequested: false
         };
-        (async () => dbRemoveFromPool(poolEntry.session))()
-            .then(() => {
-            console.log('user disconnected', io.engine.clientsCount, io.of('/').sockets.size, socket.id);
-        });
+        (async () => dbRemoveFromPool(poolEntry.session))();
     });
 });
 setInterval(() => {

@@ -495,7 +495,6 @@ export class Board {
 
   updateBasedOnState = function(this: Board, square: SVGElement | null, file: number, rank: number) {
     const gameUX = this.gameUX;
-    console.log("State: ", gameUX.gameUXState);
     switch (gameUX.gameUXState) {
       case GameUXState.SettingUp:
         gameUX.components['positionSetup']?.setSquare(file, rank);

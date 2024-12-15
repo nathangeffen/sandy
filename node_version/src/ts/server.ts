@@ -40,11 +40,9 @@ app.get('/findopponent', (_, res) => {
 });
 
 app.get('/play', (req, res) => {
-        console.log("Executing play", req.query);
         const gameUXState: GameUXState = (req.query.side === 'S') ? GameUXState.WaitingUser : GameUXState.WaitingOtherPlayer;
         const game: any = dbGetGame(Number(req.query.game));
         const side = (req.query.side === 'S') ? 'South' : 'North';
-        console.log("Side:", game.side);
         res.render('play.html', {
                 startPosition: game.specification,
                 gameUXState: gameUXState,
@@ -132,7 +130,6 @@ export const dbPlaceInPool = function(poolEntry: PoolEntry) {
                 const row: any = db.prepare(
                         "SELECT rowid FROM position WHERE name = ?").
                         get(poolEntry.name);
-                console.log("entry, row", poolEntry, row);
                 positionId = row.rowid;
         }
         db.prepare("INSERT INTO gamesearch (session, position_id) VALUES(?, ?)").
@@ -205,13 +202,6 @@ export const dbGetGame = function(id: number) {
 }
 
 io.on('connection', (socket) => {
-        console.log(
-                'a user connected',
-                io.engine.clientsCount,
-                io.of('/').sockets.size,
-                socket.id,
-        );
-
         socket.on('placePool', (entry: PoolEntry) => {
                 let entries: any;
                 (async () => {
@@ -253,15 +243,7 @@ io.on('connection', (socket) => {
                         gameRequested: false
                 };
                 (async () =>
-                        dbRemoveFromPool(poolEntry.session))()
-                        .then(() => {
-                                console.log(
-                                        'user disconnected',
-                                        io.engine.clientsCount,
-                                        io.of('/').sockets.size,
-                                        socket.id,
-                                )
-                        });
+                        dbRemoveFromPool(poolEntry.session))();
         });
 });
 

@@ -23,9 +23,6 @@ export class Pool {
     }
   }
 
-  addEvents = function(this: Pool) {
-  }
-
   setEntries = function(this: Pool, entries: PoolEntry[], session: string) {
     const tbody = this.table.querySelector('tbody');
     if (!tbody) return;
@@ -44,7 +41,6 @@ export class Pool {
       tr.addEventListener('click', (event) => {
         event.preventDefault();
         tr.querySelectorAll("td").forEach((td: HTMLTableCellElement) => {
-          console.log("Calling choose opponent", td.innerText);
           this.gameUX.components['placePool'].chooseOpponent(td.innerText);
         });
       });
